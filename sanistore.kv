@@ -1,0 +1,17 @@
+<WindowManager>:
+    WelcomeScreen:
+
+<WelcomeScreen>:
+    name: "First"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Images/First.png"
+    BoxLayout:
+        orientation: "vertical"
+        id: LY1
+        padding: (100,100)
+        spacing: 50
+        size_hint: (1,1)
+

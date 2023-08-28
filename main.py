@@ -2,7 +2,7 @@
 import kivy
 from kivy.config import Config
 from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, FadeTransition
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, FadeTransition, WipeTransition, FallOutTransition
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -17,13 +17,21 @@ from HoverButton import HoverBehavior
 # Class that allows transitions between screens.
 # Using this we are preventing creating redundant switch screen methods within each class.
 class Transition:
-    def transition(self, direction, screen_name):
-        self.manager.transition.direction = direction
+    def transition(self, screen_name):
+        self.manager.transition = WipeTransition()
+        self.manager.transition.duration = 1
         self.manager.current = screen_name
 
-    def home(self, instance):
-        self.manager.transition.direction = "right"
+
+
+
+
+    def home_page(self, instance):
+        self.manager.transition.duration = 1
         self.manager.current = "Second"
+        self.manager.transition = WipeTransition()
+
+
 
 
 
@@ -38,7 +46,9 @@ class HoverButton(Button, HoverBehavior):
         # each value of a key is a image which is highlighted after it has been selected with a mouse hover.
         # Whenever we want to add additional button, that includes a highlight function, we just need to update the path within this dictionary.
         self.images_path = {"Images/inventory_text.png": "Images/inventory_text_selected.png",
-                            "Images/import_text.png": "Images/import_text_selected.png"}
+                            "Images/import_text.png": "Images/import_text_selected.png",
+                            "Images/home_text.png": "Images/home_text_selected.png",
+                            "Images/home_button_icon.png":"Images/home_button_icon_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance atribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -68,9 +78,8 @@ class WelcomeScreen(Screen, Transition):
         self.ids.LY1.add_widget(self.logo_image)
         fade_in_image = Animation(opacity=1, duration=1)
         fade_in_image.start(self.logo_image)
-
         # In order for this function to perform as inteded, lambda needs to be used here.
-        Clock.schedule_once(lambda dt: self.transition("left", "Second"), 1)
+        Clock.schedule_once(lambda dt: self.transition("Second"), 2)
 
 
 
@@ -81,11 +90,12 @@ class MainScreen(Screen, Transition):
             background_normal="Images/inventory_text.png",
             background_down="Images/inventory_text.png",
             font_size=15,
-            size_hint=(.8, 1),
-            on_release=lambda x: self.transition("left", "Third"))
-        Clock.schedule_once(self.add_button, 1)
+            size_hint=(.8, 1))
+
+        self.ids.LY2.add_widget(self.inventory_button)
         self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
-        # self.inventory_button.bind(on_release=Transition.transition("left","Third"))
+        # In order for a transition to work, we need to combine this on_release event with lambda.
+        self.inventory_button.bind(on_release=lambda x: self.transition("Third"))
 
 
 
@@ -94,18 +104,36 @@ class MainScreen(Screen, Transition):
             background_down="Images/import_text.png",
             font_size=15,
             size_hint=(.8, 1))
+        self.ids.LY2.add_widget(self.import_button)
         self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
 
 
 
-    def add_button(self, instance):
-        self.ids.LY2.add_widget(self.inventory_button)
-        self.ids.LY2.add_widget(self.import_button)
+    def on_leave(self, *args):
+        pass
 
 
 
-class InventoryScreen(Screen):
-    pass
+
+class InventoryScreen(Screen, Transition):
+    def __init__(self, **kwargs):
+        super(InventoryScreen, self).__init__(**kwargs)
+
+        self.home_button = HoverButton(
+            background_normal="Images/home_button_icon.png",
+            background_down="Images/home_button_icon.png",
+            size_hint=(.5,.5))
+        self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
+        self.home_button.bind(on_release=self.home_page)
+        self.ids.LY3.add_widget(self.home_button)
+
+
+
+
+class ImportScreen(Screen, Transition):
+    def __init__(self,**kwargs):
+        super(ImportScreen, self).__init__(**kwargs)
+        pass
 
 
 
@@ -119,6 +147,7 @@ class SaniStore(App):
         sm.add_widget(WelcomeScreen(name="First"))
         sm.add_widget(MainScreen(name="Second"))
         sm.add_widget(InventoryScreen(name="Third"))
+        sm.add_widget(ImportScreen(name="Fourth"))
         return sm
 
 

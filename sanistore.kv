@@ -8,6 +8,7 @@
     WelcomeScreen:
     MainScreen:
     InventoryScreen:
+    ImportScreen:
 
 
 <WelcomeScreen>:
@@ -36,8 +37,8 @@
         orientation: "vertical"
         padding: (0,10)
         spacing: 10
-        pos_hint: {"center_x": .35,"center_y": .8}
-        size_hint: (.7,.4)
+        pos_hint: {"center_x": .25,"center_y": .8}
+        size_hint: (.45,.25)
 
 <InventoryScreen>:
     name: "Third"
@@ -46,3 +47,10 @@
             pos: self.pos
             size: self.size
             source: "Images/inventory_screen.png"
+    BoxLayout:
+        id: LY3
+        orientation: "vertical"
+        padding: (0,10)
+        spacing: 10
+        pos_hint: {"center_x": .95,"center_y": .1}
+        size_hint: (.12,.12)

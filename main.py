@@ -21,6 +21,11 @@ class Transition:
         self.manager.transition.direction = direction
         self.manager.current = screen_name
 
+    def home(self, instance):
+        self.manager.transition.direction = "right"
+        self.manager.current = "Second"
+
+
 
 # Custom class HoverButton(original creator: 'Olivier POYEN') fills the role as a highlighter of a button.
 # Once mouse is hovering over a specified widget, its custom events (on_enter,on_leave) are fired,
@@ -69,16 +74,20 @@ class WelcomeScreen(Screen, Transition):
 
 
 
-class MainScreen(Screen):
+class MainScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(MainScreen,self).__init__(**kwargs)
         self.inventory_button = HoverButton(
             background_normal="Images/inventory_text.png",
             background_down="Images/inventory_text.png",
             font_size=15,
-            size_hint=(.8, 1))
-        self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
+            size_hint=(.8, 1),
+            on_release=lambda x: self.transition("left", "Third"))
         Clock.schedule_once(self.add_button, 1)
+        self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
+        # self.inventory_button.bind(on_release=Transition.transition("left","Third"))
+
+
 
         self.import_button = HoverButton(
             background_normal="Images/import_text.png",
@@ -110,10 +119,8 @@ class SaniStore(App):
         sm.add_widget(WelcomeScreen(name="First"))
         sm.add_widget(MainScreen(name="Second"))
         sm.add_widget(InventoryScreen(name="Third"))
-
         return sm
 
 
 if __name__ == "__main__":
-
     SaniStore().run()

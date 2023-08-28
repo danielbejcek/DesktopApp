@@ -1,5 +1,14 @@
 <WindowManager>:
+    canvas.before:
+        Color:
+            rgba: 1,1,1,1
+        Rectangle:
+            size: self.size
+            pos: self.pos
     WelcomeScreen:
+    MainScreen:
+    InventoryScreen:
+
 
 <WelcomeScreen>:
     name: "First"
@@ -15,3 +24,25 @@
         spacing: 50
         size_hint: (1,1)
 
+<MainScreen>:
+    name: "Second"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Images/Menu.jpg"
+    BoxLayout:
+        id: LY2
+        orientation: "vertical"
+        padding: (0,10)
+        spacing: 10
+        pos_hint: {"center_x": .35,"center_y": .8}
+        size_hint: (.7,.4)
+
+<InventoryScreen>:
+    name: "Third"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Images/Menu.jpg"

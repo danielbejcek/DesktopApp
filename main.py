@@ -2,7 +2,7 @@
 import kivy
 from kivy.config import Config
 from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, FadeTransition, WipeTransition, FallOutTransition
+from kivy.uix.screenmanager import ScreenManager, Screen, WipeTransition
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -10,9 +10,14 @@ from kivy.uix.image import Image
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
 from kivy.event import EventDispatcher
 from HoverButton import HoverBehavior
+from kivy.uix.textinput import TextInput
+from DataFrame import *
+import pandas as pd
 
 # Class that allows transitions between screens.
 # Using this we are preventing creating redundant switch screen methods within each class.
@@ -22,17 +27,10 @@ class Transition:
         self.manager.transition.duration = 1
         self.manager.current = screen_name
 
-
-
-
-
     def home_page(self, instance):
         self.manager.transition.duration = 1
         self.manager.current = "Second"
         self.manager.transition = WipeTransition()
-
-
-
 
 
 # Custom class HoverButton(original creator: 'Olivier POYEN') fills the role as a highlighter of a button.
@@ -55,7 +53,7 @@ class HoverButton(Button, HoverBehavior):
     # it changes the source image for a highlighted one.
     def on_button_hover(self, instance):
         for key in self.images_path:
-            if instance.background_normal == key:
+            if instance.background_normal in key:
                 instance.background_normal = self.images_path[key]
 
 
@@ -63,7 +61,7 @@ class HoverButton(Button, HoverBehavior):
     # It loops trough the dictionary and after it finds a corresponding string, it changes it back to the non-highlighted image.
     def on_button_hover_exit(self, instance):
         for key, value in self.images_path.items():
-            if instance.background_normal == value:
+            if instance.background_normal in value:
                 instance.background_normal = key
 
 class WelcomeScreen(Screen, Transition):
@@ -127,6 +125,22 @@ class InventoryScreen(Screen, Transition):
         self.home_button.bind(on_release=self.home_page)
         self.ids.LY3.add_widget(self.home_button)
 
+        for component, amount in zip(components["Komponent"], components["Množství"]):
+            print(component, amount)
+            self.component_label= Label(
+                text=component,
+                size_hint=(1,None),
+                font_size=35,
+                bold=True)
+
+            self.amount_input = Label(
+                text=str(amount),
+                size_hint=(1,None),
+                font_size=50,
+                bold=True)
+            self.ids.LY4.add_widget(self.component_label)
+            self.ids.LY4.add_widget(self.amount_input)
+            self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
 
 
 

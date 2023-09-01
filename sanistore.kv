@@ -50,7 +50,23 @@
     BoxLayout:
         id: LY3
         orientation: "vertical"
-        padding: (0,10)
-        spacing: 10
+        padding: (0,0)
+        spacing: 0
         pos_hint: {"center_x": .95,"center_y": .1}
-        size_hint: (.12,.12)
+        size_hint: (.12,.11)
+
+
+    ScrollView:
+        do_scroll_x: False
+        do_scroll_y: True
+        scroll_type: ["content"]
+        size_hint: (.3, 0.8)
+
+        GridLayout:
+            id: LY4
+            orientation: "lr-tb"
+            cols: 2
+            padding: (300,10,100,100)
+            spacing: (400,50)
+            pos_hint: {"center_x": .1,"center_y": .8}
+            size_hint: (1,None)

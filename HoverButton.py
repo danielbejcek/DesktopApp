@@ -6,7 +6,7 @@ class HoverBehavior(object):
     """Hover behavior.
     :Events:
         `on_enter`
-            Fired when mouse enter the bbox of the widget.
+            Fired when mouse enter the box of the widget.
         `on_leave`
             Fired when the mouse exit the widget 
     """

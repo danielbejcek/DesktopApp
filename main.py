@@ -48,7 +48,8 @@ class HoverButton(Button, HoverBehavior):
                             "Images/import_text.png": "Images/import_text_selected.png",
                             "Images/home_text.png": "Images/home_text_selected.png",
                             "Images/home_button_icon.png":"Images/home_button_icon_selected.png",
-                            "Images/notebook_closed.png":"Images/notebook_opened.png"}
+                            "Images/notebook_closed.png":"Images/notebook_closed_selected.png",
+                            "Images/notebook_opened.png":"Images/notebook_opened_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance atribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -122,7 +123,7 @@ class InventoryScreen(Screen, Transition):
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
             background_down="Images/home_button_icon.png",
-            size_hint=(.07,.1),
+            size_hint=(.065,.1),
             pos_hint={"center_x": .93,"top_y": .95})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
@@ -131,21 +132,18 @@ class InventoryScreen(Screen, Transition):
         self.current_state_image = Image(
             source="Images/current_state.png",
             size_hint=(.5, .5),
-            pos_hint={"center_x": .18, "center_y": .9})
+            pos_hint={"center_x": .16, "center_y": .9})
         self.ids.LY3.add_widget(self.current_state_image)
 
         self.notebook_view = HoverButton(
             background_normal="Images/notebook_closed.png",
             background_down="Images/notebook_closed.png",
-            size_hint=(.04, .12),
-            pos_hint={"center_x": .4, "center_y": .9})
-        # self.notebook_view.bind(on_enter=self.open_notebook)
+            size_hint=(.04, .1),
+            pos_hint={"center_x": .38, "center_y": .91})
+        self.notebook_view.bind(on_enter=self.notebook_view.on_button_hover)
         self.notebook_view.bind(on_leave=self.notebook_view.on_button_hover_exit)
+        self.notebook_view.bind(on_release=self.background_change)
         self.ids.LY3.add_widget(self.notebook_view)
-
-
-
-
 
         for component, amount in zip(components["Komponent"], components["Množství"]):
             self.component_label= Label(
@@ -162,6 +160,18 @@ class InventoryScreen(Screen, Transition):
             self.add_widgets_LY4()
             self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
 
+    def background_change(self, instance):
+        if instance.background_normal and instance.background_down == "Images/notebook_closed.png":
+            instance.size_hint=(.08,.1)
+            instance.background_normal = "Images/notebook_opened.png"
+            instance.background_down = "Images/notebook_opened.png"
+        elif instance.background_normal and instance.background_down == "Images/notebook_opened.png":
+            instance.size_hint=(.04,.1)
+            instance.background_normal="Images/notebook_closed.png"
+            instance.background_down="Images/notebook_closed.png"
+
+
+
 
     def add_widgets_LY4(self):
         self.ids.LY4.add_widget(self.component_label)
@@ -172,15 +182,15 @@ class InventoryScreen(Screen, Transition):
                 size_hint_y=None,
                 height=10)
             self.ids.LY4.add_widget(self.divider_line)
-    def add_widgets_LY5(self):
-        self.ids.LY5.add_widget(self.component_label)
-        self.ids.LY5.add_widget(self.amount_input)
-        for divider in range(2):
-            self.divider_line = Image(
-                source="Images/divider.png",
-                size_hint_y=None,
-                height=10)
-            self.ids.LY5.add_widget(self.divider_line)
+    # def add_widgets_LY5(self):
+    #     self.ids.LY5.add_widget(self.component_label)
+    #     self.ids.LY5.add_widget(self.amount_input)
+    #     for divider in range(2):
+    #         self.divider_line = Image(
+    #             source="Images/divider.png",
+    #             size_hint_y=None,
+    #             height=10)
+    #         self.ids.LY5.add_widget(self.divider_line)
 
 class ImportScreen(Screen, Transition):
     def __init__(self,**kwargs):

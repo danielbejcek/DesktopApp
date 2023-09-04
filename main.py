@@ -10,6 +10,7 @@ from kivy.uix.image import Image
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
@@ -46,7 +47,8 @@ class HoverButton(Button, HoverBehavior):
         self.images_path = {"Images/inventory_text.png": "Images/inventory_text_selected.png",
                             "Images/import_text.png": "Images/import_text_selected.png",
                             "Images/home_text.png": "Images/home_text_selected.png",
-                            "Images/home_button_icon.png":"Images/home_button_icon_selected.png"}
+                            "Images/home_button_icon.png":"Images/home_button_icon_selected.png",
+                            "Images/notebook_closed.png":"Images/notebook_opened.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance atribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -120,29 +122,65 @@ class InventoryScreen(Screen, Transition):
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
             background_down="Images/home_button_icon.png",
-            size_hint=(.5,.5))
+            size_hint=(.07,.1),
+            pos_hint={"center_x": .93,"top_y": .95})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
         self.ids.LY3.add_widget(self.home_button)
 
+        self.current_state_image = Image(
+            source="Images/current_state.png",
+            size_hint=(.5, .5),
+            pos_hint={"center_x": .18, "center_y": .9})
+        self.ids.LY3.add_widget(self.current_state_image)
+
+        self.notebook_view = HoverButton(
+            background_normal="Images/notebook_closed.png",
+            background_down="Images/notebook_closed.png",
+            size_hint=(.04, .12),
+            pos_hint={"center_x": .4, "center_y": .9})
+        # self.notebook_view.bind(on_enter=self.open_notebook)
+        self.notebook_view.bind(on_leave=self.notebook_view.on_button_hover_exit)
+        self.ids.LY3.add_widget(self.notebook_view)
+
+
+
+
+
         for component, amount in zip(components["Komponent"], components["Množství"]):
-            print(component, amount)
             self.component_label= Label(
                 text=component,
                 size_hint=(1,None),
-                font_size=35,
+                font_size=30,
                 bold=True)
 
             self.amount_input = Label(
                 text=str(amount),
                 size_hint=(1,None),
-                font_size=50,
+                font_size=45,
                 bold=True)
-            self.ids.LY4.add_widget(self.component_label)
-            self.ids.LY4.add_widget(self.amount_input)
+            self.add_widgets_LY4()
             self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
 
 
+    def add_widgets_LY4(self):
+        self.ids.LY4.add_widget(self.component_label)
+        self.ids.LY4.add_widget(self.amount_input)
+        for divider in range(2):
+            self.divider_line = Image(
+                source="Images/divider.png",
+                size_hint_y=None,
+                height=10)
+            self.ids.LY4.add_widget(self.divider_line)
+    def add_widgets_LY5(self):
+        self.ids.LY5.add_widget(self.component_label)
+        self.ids.LY5.add_widget(self.amount_input)
+        for divider in range(2):
+            self.divider_line = Image(
+                source="Images/divider.png",
+                size_hint_y=None,
+                height=10)
+            self.ids.LY5.add_widget(self.divider_line)
 
 class ImportScreen(Screen, Transition):
     def __init__(self,**kwargs):

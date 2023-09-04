@@ -135,29 +135,18 @@ class InventoryScreen(Screen, Transition):
             pos_hint={"center_x": .16, "center_y": .9})
         self.ids.LY3.add_widget(self.current_state_image)
 
-        self.notebook_view = HoverButton(
+        self.notebook_button = HoverButton(
             background_normal="Images/notebook_closed.png",
             background_down="Images/notebook_closed.png",
             size_hint=(.04, .1),
             pos_hint={"center_x": .38, "center_y": .91})
-        self.notebook_view.bind(on_enter=self.notebook_view.on_button_hover)
-        self.notebook_view.bind(on_leave=self.notebook_view.on_button_hover_exit)
-        self.notebook_view.bind(on_release=self.background_change)
-        self.ids.LY3.add_widget(self.notebook_view)
+        self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover)
+        self.notebook_button.bind(on_leave=self.notebook_button.on_button_hover_exit)
+        self.notebook_button.bind(on_release=self.background_change)
+        self.ids.LY3.add_widget(self.notebook_button)
 
-        for component, amount in zip(components["Komponent"], components["Množství"]):
-            self.component_label= Label(
-                text=component,
-                size_hint=(1,None),
-                font_size=30,
-                bold=True)
-
-            self.amount_input = Label(
-                text=str(amount),
-                size_hint=(1,None),
-                font_size=45,
-                bold=True)
-            self.add_widgets_LY4()
+    def on_pre_enter(self, *args):
+            self.add_widgets(self.ids.LY4)
             self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
 
     def background_change(self, instance):
@@ -165,33 +154,74 @@ class InventoryScreen(Screen, Transition):
             instance.size_hint=(.08,.1)
             instance.background_normal = "Images/notebook_opened.png"
             instance.background_down = "Images/notebook_opened.png"
+
+            self.ids.LY4.clear_widgets()
+            self.add_widgets(self.ids.LY5)
+
+
         elif instance.background_normal and instance.background_down == "Images/notebook_opened.png":
             instance.size_hint=(.04,.1)
             instance.background_normal="Images/notebook_closed.png"
             instance.background_down="Images/notebook_closed.png"
 
+            self.ids.LY5.clear_widgets()
+            self.on_pre_enter()
 
 
 
-    def add_widgets_LY4(self):
-        self.ids.LY4.add_widget(self.component_label)
-        self.ids.LY4.add_widget(self.amount_input)
-        for divider in range(2):
-            self.divider_line = Image(
-                source="Images/divider.png",
-                size_hint_y=None,
-                height=10)
-            self.ids.LY4.add_widget(self.divider_line)
-    # def add_widgets_LY5(self):
-    #     self.ids.LY5.add_widget(self.component_label)
-    #     self.ids.LY5.add_widget(self.amount_input)
-    #     for divider in range(2):
-    #         self.divider_line = Image(
-    #             source="Images/divider.png",
-    #             size_hint_y=None,
-    #             height=10)
-    #         self.ids.LY5.add_widget(self.divider_line)
 
+    def add_widgets(self, layer):
+        if self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_closed.png":
+
+            for component, amount in zip(components["Komponent"], components["Množství"]):
+                self.component_label= Label(
+                    text=component,
+                    size_hint=(1,None),
+                    font_size=30,
+                    bold=True)
+
+                self.amount_input = Label(
+                    text=str(amount),
+                    size_hint=(1,None),
+                    font_size=45,
+                    bold=True)
+                layer.add_widget(self.component_label)
+                layer.add_widget(self.amount_input)
+                for divider in range(2):
+                    self.divider_line = Image(
+                        source="Images/divider.png",
+                        size_hint_y=None,
+                        height=10)
+                    layer.add_widget(self.divider_line)
+
+
+        elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
+
+            for component, amount in zip(components["Komponent"], components["Množství"]):
+                self.component_label= Label(
+                    text=component,
+                    size_hint=(.8,1),
+                    font_size=15)
+
+                self.amount_input = Label(
+                    text=str(amount),
+                    size_hint=(.8,1),
+                    font_size=20)
+                layer.add_widget(self.component_label)
+                layer.add_widget(self.amount_input)
+                for divider in range(2):
+                    self.divider_line = Image(
+                        source="Images/divider.png",
+                        size_hint_y=None,
+                        height=7,
+                        width=1,
+                        allow_stretch=True)
+                    layer.add_widget(self.divider_line)
+
+
+    def on_leave(self, *args):
+        self.ids.LY5.clear_widgets()
+        self.ids.LY4.clear_widgets()
 class ImportScreen(Screen, Transition):
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)

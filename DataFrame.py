@@ -1,9 +1,5 @@
 import pandas as pd
-# pd.set_option("display.colheader_justify","left")
-# styles = [
-#     dict(selector="th", props=[("text-align", "left")]),
-#     dict(selector="td", props=[("text-align", "left")])
-# ]
+
 
 components = {"Komponent":
                 ["NOHA ALU 25",

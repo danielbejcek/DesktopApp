@@ -41,7 +41,7 @@ class HoverButton(Button, HoverBehavior):
     def __init__(self, **kwargs):
         super(HoverButton, self).__init__(**kwargs)
 
-        # Empty dictionary which consists of keys and values. Each key is a image before being selected with a mouse hover.
+        # Dictionary which consists of keys and values. Each key is a image before being selected with a mouse hover,
         # each value of a key is a image which is highlighted after it has been selected with a mouse hover.
         # Whenever we want to add additional button, that includes a highlight function, we just need to update the path within this dictionary.
         self.images_path = {"Images/inventory_text.png": "Images/inventory_text_selected.png",
@@ -51,7 +51,7 @@ class HoverButton(Button, HoverBehavior):
                             "Images/notebook_closed.png":"Images/notebook_closed_selected.png",
                             "Images/notebook_opened.png":"Images/notebook_opened_selected.png"}
 
-    # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance atribute.
+    # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
     # it changes the source image for a highlighted one.
     def on_button_hover(self, instance):
@@ -108,14 +108,6 @@ class MainScreen(Screen, Transition):
         self.ids.LY2.add_widget(self.import_button)
         self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
 
-
-
-    def on_leave(self, *args):
-        pass
-
-
-
-
 class InventoryScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(InventoryScreen, self).__init__(**kwargs)
@@ -145,6 +137,7 @@ class InventoryScreen(Screen, Transition):
         self.notebook_button.bind(on_release=self.background_change)
         self.ids.LY3.add_widget(self.notebook_button)
 
+    # Whenever we load this screen for the first time,
     def on_pre_enter(self, *args):
             self.add_widgets(self.ids.LY4)
             self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
@@ -168,11 +161,8 @@ class InventoryScreen(Screen, Transition):
             self.on_pre_enter()
 
 
-
-
     def add_widgets(self, layer):
         if self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_closed.png":
-
             for component, amount in zip(components["Komponent"], components["Množství"]):
                 self.component_label= Label(
                     text=component,
@@ -196,32 +186,39 @@ class InventoryScreen(Screen, Transition):
 
 
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
-
+            iteration_count = 0
             for component, amount in zip(components["Komponent"], components["Množství"]):
                 self.component_label= Label(
                     text=component,
                     size_hint=(.8,1),
-                    font_size=15)
+                    font_size=18)
 
                 self.amount_input = Label(
                     text=str(amount),
                     size_hint=(.8,1),
-                    font_size=20)
+                    font_size=22)
                 layer.add_widget(self.component_label)
                 layer.add_widget(self.amount_input)
-                for divider in range(2):
-                    self.divider_line = Image(
-                        source="Images/divider.png",
-                        size_hint_y=None,
-                        height=7,
-                        width=1,
-                        allow_stretch=True)
-                    layer.add_widget(self.divider_line)
+                iteration_count += 1
 
+                if iteration_count == 2:
+                    for divider in range(4):
+                        self.divider_line = Image(
+                            source="Images/divider_2.png",
+                            size_hint_y=None,
+                            height=10,
+                            width=3)
+                        layer.add_widget(self.divider_line)
+                        iteration_count = 0
 
     def on_leave(self, *args):
         self.ids.LY5.clear_widgets()
-        self.ids.LY4.clear_widgets()
+        self.ids.LY5.clear_widgets()
+        self.notebook_button.size_hint = (.04, .1)
+        self.notebook_button.background_normal = "Images/notebook_closed.png"
+        self.notebook_button.background_down = "Images/notebook_closed.png"
+
+
 class ImportScreen(Screen, Transition):
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)

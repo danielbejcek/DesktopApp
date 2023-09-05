@@ -82,8 +82,5 @@ components = {"Komponent":
                  0]}
 
 df = pd.DataFrame(components)
-# df_left = df.style.set_properties(**{"text-align": "left"}).set_table_styles([dict(selector="td", props=[("text-align", "left")])])
-# styled_df = df.style.set_table_styles(styles)
-# print(styled_df.to_string())
 
 print(df)

@@ -137,11 +137,17 @@ class InventoryScreen(Screen, Transition):
         self.notebook_button.bind(on_release=self.background_change)
         self.ids.LY3.add_widget(self.notebook_button)
 
-    # Whenever we load this screen for the first time,
+    # Whenever we load this screen for the first time, "add_widgets" is fired that fills the screen with scrollable database
+    # of components and their respective amount. This fucntion is also applied when we return to this screen. Further in the code
+    # we will use a "on_leave" function that clears all of the widgets to prevent the screen from overlapping.
     def on_pre_enter(self, *args):
             self.add_widgets(self.ids.LY4)
             self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
 
+    # Method that changes visuals and also adds or clears widgets depending on the current notebook status.
+    # This method is bound to a button click that traverses between an opened and closed.
+    # Whenever we click a respective button and meet a condition thats states "notebook_closed",
+    # we fire a "clear_widgets" function that deletes widgets from previous layout and adds new widgets to a new layout.
     def background_change(self, instance):
         if instance.background_normal and instance.background_down == "Images/notebook_closed.png":
             instance.size_hint=(.08,.1)
@@ -151,7 +157,8 @@ class InventoryScreen(Screen, Transition):
             self.ids.LY4.clear_widgets()
             self.add_widgets(self.ids.LY5)
 
-
+        # Same utility only the other way around. We delete widgets from new layout only to fire a "on_pre_enter" function,
+        # that brings us back to the first layout with corresponding widgets included.
         elif instance.background_normal and instance.background_down == "Images/notebook_opened.png":
             instance.size_hint=(.04,.1)
             instance.background_normal="Images/notebook_closed.png"
@@ -160,7 +167,9 @@ class InventoryScreen(Screen, Transition):
             self.ids.LY5.clear_widgets()
             self.on_pre_enter()
 
-
+    # Method that creates widgets depending on the current layout. We switch between "notebook_opened" and "notebook_closed".
+    # With series of for loops we create a database of warehouse stock. Under first condition, the database is scrollable
+    # and set into two columns.
     def add_widgets(self, layer):
         if self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_closed.png":
             for component, amount in zip(components["Komponent"], components["Množství"]):
@@ -184,7 +193,7 @@ class InventoryScreen(Screen, Transition):
                         height=10)
                     layer.add_widget(self.divider_line)
 
-
+        # In the second condition, we create a database into 4 columns to present a general overview of the warehouse stock.
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
             iteration_count = 0
             for component, amount in zip(components["Komponent"], components["Množství"]):
@@ -201,6 +210,9 @@ class InventoryScreen(Screen, Transition):
                 layer.add_widget(self.amount_input)
                 iteration_count += 1
 
+                # In order to preserve a correct division by "divider_line". We need to add a new variable "iteration_count".
+                # This divider is created only after a for loop has iterated twice, leading to a desired result, which is:
+                # "Component    Amount - Component  Amount" and all of that is then underlined with a divider.
                 if iteration_count == 2:
                     for divider in range(4):
                         self.divider_line = Image(
@@ -211,6 +223,7 @@ class InventoryScreen(Screen, Transition):
                         layer.add_widget(self.divider_line)
                         iteration_count = 0
 
+    # Function that resets the page of all the widgets, allowing us to return to the page without overlapping widgets.
     def on_leave(self, *args):
         self.ids.LY5.clear_widgets()
         self.ids.LY5.clear_widgets()

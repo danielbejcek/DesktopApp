@@ -49,7 +49,9 @@ class HoverButton(Button, HoverBehavior):
                             "Images/home_text.png": "Images/home_text_selected.png",
                             "Images/home_button_icon.png":"Images/home_button_icon_selected.png",
                             "Images/notebook_closed.png":"Images/notebook_closed_selected.png",
-                            "Images/notebook_opened.png":"Images/notebook_opened_selected.png"}
+                            "Images/notebook_opened.png":"Images/notebook_opened_selected.png",
+                            "Images/minus_sign.png":"Images/minus_sign_selected.png",
+                            "Images/plus_sign.png":"Images/plus_sign_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -139,7 +141,7 @@ class InventoryScreen(Screen, Transition):
 
     # Whenever we load this screen for the first time, "add_widgets" is fired that fills the screen with scrollable database
     # of components and their respective amount. This fucntion is also applied when we return to this screen. Further in the code
-    # we will use a "on_leave" function that clears all of the widgets to prevent the screen from overlapping.
+    # we will use a "on_leave" function that clears all of the widgets to prevent the widgets from overlapping.
     def on_pre_enter(self, *args):
             self.add_widgets(self.ids.LY4)
             self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
@@ -175,23 +177,58 @@ class InventoryScreen(Screen, Transition):
             for component, amount in zip(components["Komponent"], components["Množství"]):
                 self.component_label= Label(
                     text=component,
-                    size_hint=(1,None),
-                    font_size=30,
-                    bold=True)
+                    font_size=25,
+                    padding=(200,0,0,0),
+                    bold=False)
 
                 self.amount_input = Label(
                     text=str(amount),
-                    size_hint=(1,None),
-                    font_size=45,
-                    bold=True)
+                    font_size=35,
+                    padding=(400, 0, 0, 0),
+                    bold=False)
+
+                self.minus_sign = HoverButton(
+                    background_normal="Images/minus_sign.png",
+                    background_down="Images/minus_sign.png",
+                    size_hint=(None, None),
+                    padding=(0, 0, 0, 0),
+                    width=90,
+                    height=80,
+                    opacity=1)
+                self.minus_sign.bind(on_enter=self.minus_sign.on_button_hover, on_leave=self.minus_sign.on_button_hover_exit)
+
+                self.plus_sign = HoverButton(
+                    background_normal="Images/plus_sign.png",
+                    background_down="Images/plus_sign.png",
+                    size_hint=(None, None),
+                    padding=(0, 0, 0, 0),
+                    width=80,
+                    height=80,
+                    opacity=1)
+                self.plus_sign.bind(on_enter=self.plus_sign.on_button_hover, on_leave=self.plus_sign.on_button_hover_exit)
+
+                self.previous_amount = Label(
+                    text=str(amount),
+                    font_size=35,
+                    padding=(100, 0, 0, 0),
+                    disabled=True)
+
+
                 layer.add_widget(self.component_label)
                 layer.add_widget(self.amount_input)
-                for divider in range(2):
-                    self.divider_line = Image(
-                        source="Images/divider.png",
+                layer.add_widget(self.previous_amount)
+                layer.add_widget(self.minus_sign)
+                layer.add_widget(self.plus_sign)
+
+                for divider in range(5):
+                    self.divider_line_2 = Image(
+                        source="Images/divider_3.png",
                         size_hint_y=None,
-                        height=10)
-                    layer.add_widget(self.divider_line)
+                        size_hint_x=.1,
+                        height=2,
+                        width=2,
+                        fit_mode="fill")
+                    layer.add_widget(self.divider_line_2)
 
         # In the second condition, we create a database into 4 columns to present a general overview of the warehouse stock.
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
@@ -212,7 +249,7 @@ class InventoryScreen(Screen, Transition):
 
                 # In order to preserve a correct division by "divider_line". We need to add a new variable "iteration_count".
                 # This divider is created only after a for loop has iterated twice, leading to a desired result, which is:
-                # "Component    Amount - Component  Amount" and all of that is then underlined with a divider.
+                # "Component  -  Amount , Component - Amount" and all of that is then underlined with a divider.
                 if iteration_count == 2:
                     for divider in range(4):
                         self.divider_line = Image(
@@ -222,6 +259,9 @@ class InventoryScreen(Screen, Transition):
                             width=3)
                         layer.add_widget(self.divider_line)
                         iteration_count = 0
+
+    def update_components(self):
+        pass
 
     # Function that resets the page of all the widgets, allowing us to return to the page without overlapping widgets.
     def on_leave(self, *args):

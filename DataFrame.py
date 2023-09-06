@@ -1,4 +1,8 @@
 import pandas as pd
+pd.options.display.width= None
+pd.options.display.max_columns= None
+pd.set_option('display.max_rows', 5000)
+pd.set_option('display.max_columns', 3000)
 
 
 components = {"Komponent":
@@ -25,12 +29,12 @@ components = {"Komponent":
                  "DORAZ PLAST",
                  "PANT NAT. ALU ALFA „P“",
                  "PANT NAT. ALU ALFA „L“",
-                 "PANT. NAT. ALU NERO „P“",
-                 "PANT. NAT. ALU NERO „L“",
+                 "PANT NAT. ALU NERO „P“",
+                 "PANT NAT. ALU NERO „L“",
                  "PANT NAT. NEREZ ALFA „P“",
                  "PANT NAT. NEREZ ALFA „L“",
-                 "PANT. NAT. NEREZ NERO „P“",
-                 "PANT. NAT. NEREZ NERO „L“",
+                 "PANT NAT. NEREZ NERO „P“",
+                 "PANT NAT. NEREZ NERO „L“",
                  "ZADLABÁVACÍ FAB „P“",
                  "ZADLABÁVACÍ FAB „L“",
                  "KLIKA  HRANATÁ",
@@ -81,6 +85,12 @@ components = {"Komponent":
                  0,
                  0]}
 
-df = pd.DataFrame(components)
 
-print(df)
+old_df = pd.DataFrame(components)
+df = pd.DataFrame(components)
+# df.loc[df["Komponent"] == "NOHA ALU 25", "Množství"] = 25
+df.at[5, 'Množství'] = 25
+df.at[0, 'Množství'] = 30
+
+# print(df)
+

@@ -46,7 +46,7 @@ components = {"Komponent":
                  ",,U,, PROFIL 12"],
 
               "Množství":
-                [0,
+                [25,
                  0,
                  0,
                  0,

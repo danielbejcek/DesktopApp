@@ -46,12 +46,13 @@ class HoverButton(Button, HoverBehavior):
         # Whenever we want to add additional button, that includes a highlight function, we just need to update the path within this dictionary.
         self.images_path = {"Images/inventory_text.png": "Images/inventory_text_selected.png",
                             "Images/import_text.png": "Images/import_text_selected.png",
-                            "Images/home_text.png": "Images/home_text_selected.png",
                             "Images/home_button_icon.png":"Images/home_button_icon_selected.png",
                             "Images/notebook_closed.png":"Images/notebook_closed_selected.png",
                             "Images/notebook_opened.png":"Images/notebook_opened_selected.png",
                             "Images/minus_sign.png":"Images/minus_sign_selected.png",
-                            "Images/plus_sign.png":"Images/plus_sign_selected.png"}
+                            "Images/plus_sign.png":"Images/plus_sign_selected.png",
+                            "Images/lock_icon.png":"Images/unlocked_icon_selected.png",
+                            "Images/unlocked_icon.png":"Images/lock_icon_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -118,6 +119,7 @@ class InventoryScreen(Screen, Transition):
             background_normal="Images/home_button_icon.png",
             background_down="Images/home_button_icon.png",
             size_hint=(.065,.1),
+            border=(0,0,0,0),
             pos_hint={"center_x": .93,"top_y": .95})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
@@ -129,15 +131,40 @@ class InventoryScreen(Screen, Transition):
             pos_hint={"center_x": .16, "center_y": .9})
         self.ids.LY3.add_widget(self.current_state_image)
 
+        self.lock_button = HoverButton(
+            background_normal="Images/lock_icon.png",
+            background_down="Images/unlocked_icon.png",
+            size_hint=(.05, .09),
+            border=(0,0,0,0),
+            pos_hint={"center_x": .48, "center_y":.1})
+        self.lock_button.bind(on_enter=self.lock_button.on_button_hover, on_leave=self.lock_button.on_button_hover_exit)
+        self.lock_button.bind(on_release=self.update_components)
+        self.ids.LY3.add_widget(self.lock_button)
+
         self.notebook_button = HoverButton(
             background_normal="Images/notebook_closed.png",
             background_down="Images/notebook_closed.png",
             size_hint=(.04, .1),
             pos_hint={"center_x": .38, "center_y": .91})
-        self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover)
-        self.notebook_button.bind(on_leave=self.notebook_button.on_button_hover_exit)
+        self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover, on_leave=self.notebook_button.on_button_hover_exit)
         self.notebook_button.bind(on_release=self.background_change)
         self.ids.LY3.add_widget(self.notebook_button)
+    def update_components(self, instance):
+        # Widgets are unlocked.
+        if instance.background_normal == "Images/unlocked_icon_selected.png":
+            instance.background_normal = "Images/unlocked_icon.png"
+            instance.background_down = "Images/lock_icon.png"
+
+
+
+
+
+        # Widgets are locked.
+        elif instance.background_normal == "Images/lock_icon_selected.png":
+            instance.background_normal = "Images/lock_icon.png"
+            instance.background_down = "Images/unlocked_icon.png"
+
+
 
     # Whenever we load this screen for the first time, "add_widgets" is fired that fills the screen with scrollable database
     # of components and their respective amount. This fucntion is also applied when we return to this screen. Further in the code
@@ -184,16 +211,16 @@ class InventoryScreen(Screen, Transition):
                 self.amount_input = Label(
                     text=str(amount),
                     font_size=35,
-                    padding=(400, 0, 0, 0),
+                    padding=(350, 0, 0, 0),
                     bold=False)
 
                 self.minus_sign = HoverButton(
                     background_normal="Images/minus_sign.png",
                     background_down="Images/minus_sign.png",
                     size_hint=(None, None),
-                    padding=(0, 0, 0, 0),
                     width=90,
                     height=80,
+                    disabled=False,
                     opacity=1)
                 self.minus_sign.bind(on_enter=self.minus_sign.on_button_hover, on_leave=self.minus_sign.on_button_hover_exit)
 
@@ -201,9 +228,9 @@ class InventoryScreen(Screen, Transition):
                     background_normal="Images/plus_sign.png",
                     background_down="Images/plus_sign.png",
                     size_hint=(None, None),
-                    padding=(0, 0, 0, 0),
                     width=80,
                     height=80,
+                    disabled=False,
                     opacity=1)
                 self.plus_sign.bind(on_enter=self.plus_sign.on_button_hover, on_leave=self.plus_sign.on_button_hover_exit)
 
@@ -260,12 +287,11 @@ class InventoryScreen(Screen, Transition):
                         layer.add_widget(self.divider_line)
                         iteration_count = 0
 
-    def update_components(self):
-        pass
+
 
     # Function that resets the page of all the widgets, allowing us to return to the page without overlapping widgets.
     def on_leave(self, *args):
-        self.ids.LY5.clear_widgets()
+        self.ids.LY4.clear_widgets()
         self.ids.LY5.clear_widgets()
         self.notebook_button.size_hint = (.04, .1)
         self.notebook_button.background_normal = "Images/notebook_closed.png"

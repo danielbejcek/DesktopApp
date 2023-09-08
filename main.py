@@ -131,16 +131,6 @@ class InventoryScreen(Screen, Transition):
             pos_hint={"center_x": .16, "center_y": .9})
         self.ids.LY3.add_widget(self.current_state_image)
 
-        self.lock_button = HoverButton(
-            background_normal="Images/lock_icon.png",
-            background_down="Images/unlocked_icon.png",
-            size_hint=(.05, .09),
-            border=(0,0,0,0),
-            pos_hint={"center_x": .48, "center_y":.1})
-        self.lock_button.bind(on_enter=self.lock_button.on_button_hover, on_leave=self.lock_button.on_button_hover_exit)
-        self.lock_button.bind(on_release=self.update_components)
-        self.ids.LY3.add_widget(self.lock_button)
-
         self.notebook_button = HoverButton(
             background_normal="Images/notebook_closed.png",
             background_down="Images/notebook_closed.png",
@@ -149,20 +139,35 @@ class InventoryScreen(Screen, Transition):
         self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover, on_leave=self.notebook_button.on_button_hover_exit)
         self.notebook_button.bind(on_release=self.background_change)
         self.ids.LY3.add_widget(self.notebook_button)
+
+        self.lock_button = HoverButton(
+            background_normal="Images/lock_icon.png",
+            background_down="Images/unlocked_icon.png",
+            size_hint=(.05, .09),
+            border=(0, 0, 0, 0),
+            pos_hint={"center_x": .48, "center_y": .1})
+        self.lock_button.bind(on_enter=self.lock_button.on_button_hover, on_leave=self.lock_button.on_button_hover_exit)
+        self.lock_button.bind(on_release=self.update_components)
+        self.ids.LY3.add_widget(self.lock_button)
+
     def update_components(self, instance):
         # Widgets are unlocked.
         if instance.background_normal == "Images/unlocked_icon_selected.png":
+            self.notebook_button.disabled = True
             instance.background_normal = "Images/unlocked_icon.png"
             instance.background_down = "Images/lock_icon.png"
-
-
+            self.ids.LY4.clear_widgets()
+            self.add_widgets(self.ids.LY4)
 
 
 
         # Widgets are locked.
-        elif instance.background_normal == "Images/lock_icon_selected.png":
+        if instance.background_normal == "Images/lock_icon_selected.png":
+            self.notebook_button.disabled = False
             instance.background_normal = "Images/lock_icon.png"
             instance.background_down = "Images/unlocked_icon.png"
+            self.ids.LY4.clear_widgets()
+            self.add_widgets(self.ids.LY4)
 
 
 
@@ -196,69 +201,132 @@ class InventoryScreen(Screen, Transition):
             self.ids.LY5.clear_widgets()
             self.on_pre_enter()
 
+
     # Method that creates widgets depending on the current layout. We switch between "notebook_opened" and "notebook_closed".
     # With series of for loops we create a database of warehouse stock. Under first condition, the database is scrollable
     # and set into two columns.
     def add_widgets(self, layer):
         if self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_closed.png":
-            for component, amount in zip(components["Komponent"], components["Množství"]):
-                self.component_label= Label(
-                    text=component,
-                    font_size=25,
-                    padding=(200,0,0,0),
-                    bold=False)
+            if self.lock_button.background_normal == "Images/lock_icon.png":
+                self.lock_button.disabled = False
+                for component, amount in zip(components["Komponent"], components["Množství"]):
+                    self.component_label= Label(
+                        text=component,
+                        font_size=25,
+                        padding=(200,0,0,0),
+                        bold=False)
 
-                self.amount_input = Label(
-                    text=str(amount),
-                    font_size=35,
-                    padding=(350, 0, 0, 0),
-                    bold=False)
+                    self.amount_input = Label(
+                        text=str(amount),
+                        font_size=35,
+                        padding=(350, 0, 0, 0),
+                        bold=False)
 
-                self.minus_sign = HoverButton(
-                    background_normal="Images/minus_sign.png",
-                    background_down="Images/minus_sign.png",
-                    size_hint=(None, None),
-                    width=90,
-                    height=80,
-                    disabled=False,
-                    opacity=1)
-                self.minus_sign.bind(on_enter=self.minus_sign.on_button_hover, on_leave=self.minus_sign.on_button_hover_exit)
-
-                self.plus_sign = HoverButton(
-                    background_normal="Images/plus_sign.png",
-                    background_down="Images/plus_sign.png",
-                    size_hint=(None, None),
-                    width=80,
-                    height=80,
-                    disabled=False,
-                    opacity=1)
-                self.plus_sign.bind(on_enter=self.plus_sign.on_button_hover, on_leave=self.plus_sign.on_button_hover_exit)
-
-                self.previous_amount = Label(
-                    text=str(amount),
-                    font_size=35,
-                    padding=(100, 0, 0, 0),
-                    disabled=True)
+                    self.minus_sign = HoverButton(
+                        background_normal="Images/minus_sign.png",
+                        background_down="Images/minus_sign.png",
+                        size_hint=(None, None),
+                        width=90,
+                        height=80,
+                        disabled=True,
+                        opacity=1)
+                    self.minus_sign.bind(on_enter=self.minus_sign.on_button_hover, on_leave=self.minus_sign.on_button_hover_exit)
 
 
-                layer.add_widget(self.component_label)
-                layer.add_widget(self.amount_input)
-                layer.add_widget(self.previous_amount)
-                layer.add_widget(self.minus_sign)
-                layer.add_widget(self.plus_sign)
+                    self.plus_sign = HoverButton(
+                        background_normal="Images/plus_sign.png",
+                        background_down="Images/plus_sign.png",
+                        size_hint=(None, None),
+                        width=80,
+                        height=80,
+                        disabled=True,
+                        opacity=1)
+                    self.plus_sign.bind(on_enter=self.plus_sign.on_button_hover, on_leave=self.plus_sign.on_button_hover_exit)
 
-                for divider in range(5):
-                    self.divider_line_2 = Image(
-                        source="Images/divider_3.png",
-                        size_hint_y=None,
-                        size_hint_x=.1,
-                        height=2,
-                        width=2,
-                        fit_mode="fill")
-                    layer.add_widget(self.divider_line_2)
+                    self.previous_amount = Label(
+                        text=str(amount),
+                        font_size=35,
+                        padding=(100, 0, 0, 0),
+                        disabled=True)
+
+
+                    layer.add_widget(self.component_label)
+                    layer.add_widget(self.amount_input)
+                    layer.add_widget(self.previous_amount)
+                    layer.add_widget(self.minus_sign)
+                    layer.add_widget(self.plus_sign)
+
+                    for divider in range(5):
+                        self.divider_line_3 = Image(
+                            source="Images/divider_3.png",
+                            size_hint_y=None,
+                            size_hint_x=.1,
+                            height=2,
+                            width=2,
+                            fit_mode="fill")
+                        layer.add_widget(self.divider_line_3)
+
+            if self.lock_button.background_normal == "Images/unlocked_icon.png":
+                for component, amount in zip(components["Komponent"], components["Množství"]):
+                    self.component_label_2 = Label(
+                        text=component,
+                        font_size=25,
+                        padding=(200, 0, 0, 0),
+                        bold=False)
+
+                    self.amount_input_2 = Label(
+                        text=str(amount),
+                        font_size=35,
+                        padding=(350, 0, 0, 0),
+                        bold=False)
+
+                    self.minus_sign_2 = HoverButton(
+                        background_normal="Images/minus_sign.png",
+                        background_down="Images/minus_sign.png",
+                        size_hint=(None, None),
+                        width=90,
+                        height=80,
+                        disabled=False,
+                        opacity=1)
+                    self.minus_sign_2.bind(on_enter=self.minus_sign_2.on_button_hover, on_leave=self.minus_sign_2.on_button_hover_exit)
+
+                    self.plus_sign_2 = HoverButton(
+                        background_normal="Images/plus_sign.png",
+                        background_down="Images/plus_sign.png",
+                        size_hint=(None, None),
+                        width=80,
+                        height=80,
+                        disabled=False,
+                        opacity=1)
+                    self.plus_sign_2.bind(on_enter=self.plus_sign_2.on_button_hover, on_leave=self.plus_sign_2.on_button_hover_exit)
+
+                    self.previous_amount_2 = Label(
+                        text=str(amount),
+                        font_size=35,
+                        padding=(100, 0, 0, 0),
+                        disabled=False)
+
+                    layer.add_widget(self.component_label_2)
+                    layer.add_widget(self.amount_input_2)
+                    layer.add_widget(self.previous_amount_2)
+                    layer.add_widget(self.minus_sign_2)
+                    layer.add_widget(self.plus_sign_2)
+
+                    for divider in range(5):
+                        self.divider_line_2 = Image(
+                            source="Images/divider_3.png",
+                            size_hint_y=None,
+                            size_hint_x=.1,
+                            height=2,
+                            width=2,
+                            fit_mode="fill")
+                        layer.add_widget(self.divider_line_2)
+
+
 
         # In the second condition, we create a database into 4 columns to present a general overview of the warehouse stock.
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
+            self.lock_button.disabled = True
             iteration_count = 0
             for component, amount in zip(components["Komponent"], components["Množství"]):
                 self.component_label= Label(

@@ -134,6 +134,7 @@ class InventoryScreen(Screen, Transition):
         self.notebook_button = HoverButton(
             background_normal="Images/notebook_closed.png",
             background_down="Images/notebook_closed.png",
+            background_disabled_normal="Images/notebook_closed_disabled.png",
             size_hint=(.04, .1),
             pos_hint={"center_x": .38, "center_y": .91})
         self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover, on_leave=self.notebook_button.on_button_hover_exit)
@@ -143,6 +144,7 @@ class InventoryScreen(Screen, Transition):
         self.lock_button = HoverButton(
             background_normal="Images/lock_icon.png",
             background_down="Images/unlocked_icon.png",
+            background_disabled_normal="Images/lock_icon_disabled.png",
             size_hint=(.05, .09),
             border=(0, 0, 0, 0),
             pos_hint={"center_x": .48, "center_y": .1})
@@ -150,23 +152,28 @@ class InventoryScreen(Screen, Transition):
         self.lock_button.bind(on_release=self.update_components)
         self.ids.LY3.add_widget(self.lock_button)
 
+    # Method that controls the state of the "lock_button" widget. Once the background image of the lock_button is changed,
+    # we are firing widgets depending on the background. In order for the widgets to display properly in the UI, once the state is changed,
+    # all widgets are deleted and corresponding widgets take place immediately.
     def update_components(self, instance):
         # Widgets are unlocked.
         if instance.background_normal == "Images/unlocked_icon_selected.png":
+            self.ids.LY4.clear_widgets()
             self.notebook_button.disabled = True
             instance.background_normal = "Images/unlocked_icon.png"
             instance.background_down = "Images/lock_icon.png"
-            self.ids.LY4.clear_widgets()
+
             self.add_widgets(self.ids.LY4)
 
 
 
         # Widgets are locked.
         if instance.background_normal == "Images/lock_icon_selected.png":
+            self.ids.LY4.clear_widgets()
             self.notebook_button.disabled = False
             instance.background_normal = "Images/lock_icon.png"
             instance.background_down = "Images/unlocked_icon.png"
-            self.ids.LY4.clear_widgets()
+
             self.add_widgets(self.ids.LY4)
 
 
@@ -205,11 +212,19 @@ class InventoryScreen(Screen, Transition):
     # Method that creates widgets depending on the current layout. We switch between "notebook_opened" and "notebook_closed".
     # With series of for loops we create a database of warehouse stock. Under first condition, the database is scrollable
     # and set into two columns.
+
+    # "add_widgets" method now also servers as a bridge between locked and unlocked status of the stock.
+    # Whenever a lock icon is clicked and becomes unlocked, additional widgets are instantiated ("minus_sign", "plus_sign", "previous_amount").
+    # These widgets serve as a alternative mode that allows us to manually change the values on each component.
+
+    # Unfortunately we face a necessary redundancy in the upcoming code, in each for loop widgets are duplicated to prevent an error:
+    # "WidgetException: Cannot add <kivy.uix.label.Label object at 0x...>, it already has a parent".
     def add_widgets(self, layer):
         if self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_closed.png":
             if self.lock_button.background_normal == "Images/lock_icon.png":
                 self.lock_button.disabled = False
                 for component, amount in zip(components["Komponent"], components["Množství"]):
+
                     self.component_label= Label(
                         text=component,
                         font_size=25,
@@ -225,30 +240,32 @@ class InventoryScreen(Screen, Transition):
                     self.minus_sign = HoverButton(
                         background_normal="Images/minus_sign.png",
                         background_down="Images/minus_sign.png",
+                        background_disabled_normal="Images/minus_sign_disabled.png",
                         size_hint=(None, None),
                         width=90,
                         height=80,
                         disabled=True,
-                        opacity=1)
+                        opacity=.2)
                     self.minus_sign.bind(on_enter=self.minus_sign.on_button_hover, on_leave=self.minus_sign.on_button_hover_exit)
 
 
                     self.plus_sign = HoverButton(
                         background_normal="Images/plus_sign.png",
                         background_down="Images/plus_sign.png",
+                        background_disabled_normal="Images/plus_sign_disabled.png",
                         size_hint=(None, None),
                         width=80,
                         height=80,
                         disabled=True,
-                        opacity=1)
+                        opacity=.2)
                     self.plus_sign.bind(on_enter=self.plus_sign.on_button_hover, on_leave=self.plus_sign.on_button_hover_exit)
 
                     self.previous_amount = Label(
                         text=str(amount),
                         font_size=35,
                         padding=(100, 0, 0, 0),
-                        disabled=True)
-
+                        disabled=True,
+                        opacity=.1)
 
                     layer.add_widget(self.component_label)
                     layer.add_widget(self.amount_input)
@@ -266,8 +283,11 @@ class InventoryScreen(Screen, Transition):
                             fit_mode="fill")
                         layer.add_widget(self.divider_line_3)
 
+            # Condition that lets us set specific widgets from disabled=True to False, alowing us to use the "minus_sign" and "plus_sign" widgets
+            # to control the amount of the components. This condition is active only if the lock icon is pressed and becomes unlocked.
             if self.lock_button.background_normal == "Images/unlocked_icon.png":
                 for component, amount in zip(components["Komponent"], components["Množství"]):
+
                     self.component_label_2 = Label(
                         text=component,
                         font_size=25,
@@ -304,7 +324,8 @@ class InventoryScreen(Screen, Transition):
                         text=str(amount),
                         font_size=35,
                         padding=(100, 0, 0, 0),
-                        disabled=False)
+                        disabled=False,
+                        bold=True)
 
                     layer.add_widget(self.component_label_2)
                     layer.add_widget(self.amount_input_2)
@@ -325,6 +346,7 @@ class InventoryScreen(Screen, Transition):
 
 
         # In the second condition, we create a database into 4 columns to present a general overview of the warehouse stock.
+        # We are also setting the "lock_button.disabled" to True. Meaning once we are in this overview, we are not able to modify the values.
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
             self.lock_button.disabled = True
             iteration_count = 0
@@ -364,6 +386,9 @@ class InventoryScreen(Screen, Transition):
         self.notebook_button.size_hint = (.04, .1)
         self.notebook_button.background_normal = "Images/notebook_closed.png"
         self.notebook_button.background_down = "Images/notebook_closed.png"
+        self.lock_button.background_normal = "Images/lock_icon.png"
+        self.lock_button.background_down = "Images/unlocked_icon.png"
+        self.notebook_button.disabled = False
 
 
 class ImportScreen(Screen, Transition):

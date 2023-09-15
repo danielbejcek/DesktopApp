@@ -94,7 +94,8 @@ class MainScreen(Screen, Transition):
             background_normal="Images/inventory_text.png",
             background_down="Images/inventory_text.png",
             font_size=15,
-            size_hint=(.8, 1))
+            size_hint=(.8, 1),
+            border=(0, 0, 0, 0))
 
         self.ids.LY2.add_widget(self.inventory_button)
         self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
@@ -107,13 +108,17 @@ class MainScreen(Screen, Transition):
             background_normal="Images/import_text.png",
             background_down="Images/import_text.png",
             font_size=15,
-            size_hint=(.8, 1))
+            size_hint=(.8, 1),
+            border=(0, 0, 0, 0))
         self.ids.LY2.add_widget(self.import_button)
         self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
 
 class InventoryScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(InventoryScreen, self).__init__(**kwargs)
+
+        # Load the CSV file from the directory
+        self.load_data()
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
@@ -136,6 +141,7 @@ class InventoryScreen(Screen, Transition):
             background_down="Images/notebook_closed.png",
             background_disabled_normal="Images/notebook_closed_disabled.png",
             size_hint=(.04, .1),
+            border=(0, 0, 0, 0),
             pos_hint={"center_x": .38, "center_y": .91})
         self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover, on_leave=self.notebook_button.on_button_hover_exit)
         self.notebook_button.bind(on_release=self.background_change)
@@ -208,6 +214,9 @@ class InventoryScreen(Screen, Transition):
             self.ids.LY5.clear_widgets()
             self.on_pre_enter()
 
+    def load_data(self):
+        data_file = "Components_data.csv"
+        self.df = pd.read_csv(data_file)
 
     # Method that creates widgets depending on the current layout. We switch between "notebook_opened" and "notebook_closed".
     # With series of for loops we create a database of warehouse stock. Under first condition, the database is scrollable
@@ -220,10 +229,11 @@ class InventoryScreen(Screen, Transition):
     # Unfortunately we face a necessary redundancy in the upcoming code, in each for loop widgets are duplicated to prevent an error:
     # "WidgetException: Cannot add <kivy.uix.label.Label object at 0x...>, it already has a parent".
     def add_widgets(self, layer):
+        # Interface is locked.
         if self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_closed.png":
             if self.lock_button.background_normal == "Images/lock_icon.png":
                 self.lock_button.disabled = False
-                for component, amount in zip(components["Komponent"], components["Množství"]):
+                for component, amount in zip(self.df["Komponent"], self.df["Množství"]):
 
                     self.component_label= Label(
                         text=component,
@@ -265,7 +275,7 @@ class InventoryScreen(Screen, Transition):
                         font_size=35,
                         padding=(100, 0, 0, 0),
                         disabled=True,
-                        opacity=.1)
+                        opacity=0)
 
                     layer.add_widget(self.component_label)
                     layer.add_widget(self.amount_input)
@@ -286,7 +296,8 @@ class InventoryScreen(Screen, Transition):
             # Condition that lets us set specific widgets from disabled=True to False, alowing us to use the "minus_sign" and "plus_sign" widgets
             # to control the amount of the components. This condition is active only if the lock icon is pressed and becomes unlocked.
             if self.lock_button.background_normal == "Images/unlocked_icon.png":
-                for component, amount in zip(components["Komponent"], components["Množství"]):
+                # Interface is unlocked.
+                for index, (component, amount) in enumerate(zip(self.df["Komponent"], self.df["Množství"])):
 
                     self.component_label_2 = Label(
                         text=component,
@@ -307,8 +318,10 @@ class InventoryScreen(Screen, Transition):
                         width=90,
                         height=80,
                         disabled=False,
-                        opacity=1)
+                        opacity=1,
+                        on_release=self.decrement)
                     self.minus_sign_2.bind(on_enter=self.minus_sign_2.on_button_hover, on_leave=self.minus_sign_2.on_button_hover_exit)
+                    self.minus_sign_2.my_id = index
 
                     self.plus_sign_2 = HoverButton(
                         background_normal="Images/plus_sign.png",
@@ -317,11 +330,15 @@ class InventoryScreen(Screen, Transition):
                         width=80,
                         height=80,
                         disabled=False,
-                        opacity=1)
+                        opacity=1,
+                        on_release=self.increment)
                     self.plus_sign_2.bind(on_enter=self.plus_sign_2.on_button_hover, on_leave=self.plus_sign_2.on_button_hover_exit)
+                    self.plus_sign_2.my_id = index
+
+
 
                     self.previous_amount_2 = Label(
-                        text=str(amount),
+                        text=str(mount),
                         font_size=35,
                         padding=(100, 0, 0, 0),
                         disabled=False,
@@ -350,7 +367,7 @@ class InventoryScreen(Screen, Transition):
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
             self.lock_button.disabled = True
             iteration_count = 0
-            for component, amount in zip(components["Komponent"], components["Množství"]):
+            for component, amount in zip(self.df["Komponent"], self.df["Množství"]):
                 self.component_label= Label(
                     text=component,
                     size_hint=(.8,1),
@@ -377,6 +394,22 @@ class InventoryScreen(Screen, Transition):
                         layer.add_widget(self.divider_line)
                         iteration_count = 0
 
+    def increment(self, index_id):
+        index = index_id.my_id
+        self.df.at[index, "Množství"] += 1
+        self.save_data()
+        print(self.df.iloc[index])
+
+
+    def decrement(self, index_id):
+        index = index_id.my_id
+        self.df.at[index, "Množství"] -= 1
+        self.save_data()
+        print(self.df.iloc[index])
+
+    def save_data(self):
+        data_file = "Components_data.csv"
+        self.df.to_csv(data_file, index=False)
 
 
     # Function that resets the page of all the widgets, allowing us to return to the page without overlapping widgets.

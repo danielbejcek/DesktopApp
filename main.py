@@ -343,12 +343,15 @@ class InventoryScreen(Screen, Transition):
                     # "new_amount" Label is a widget that the user can modify according to his needs with the use of "plus_sign_2" and "minus_sign_2" buttons.
                     # Each iteration if this Label is then added to a list to help us connect it with corresponding components.
                     self.new_amount = Label(
-                        text=str(amount),
+                        text=str(0),
                         font_size=35,
                         padding=(100, 0, 0, 0),
                         disabled=False,
+                        color=(0,0,0,1),
                         bold=True)
                     self.new_amount_list.append(self.new_amount)
+
+
 
 
                     layer.add_widget(self.component_label_2)
@@ -401,6 +404,7 @@ class InventoryScreen(Screen, Transition):
                         layer.add_widget(self.divider_line)
                         iteration_count = 0
 
+
     # Method that allows us to change values of a "new_amount" Label. It's directly connected to the database and it's being updated real-time.
     # Each widget has its index as a 'Primary key' to help us navigate between the iterations and control which component's value we want to change.
     # We are directly accessing an item in the "new_amount_list" which has been appended from the "new_amount" Label.
@@ -410,16 +414,26 @@ class InventoryScreen(Screen, Transition):
         index = index_id.my_id
         self.df.at[index, "Množství"] += 1
         self.new_amount_list[index].text = str(int(self.new_amount_list[index].text) + 1)
+        self.set_label_color(index)
         print(self.df.iloc[index])
-
-
-
 
     def decrement_value(self, index_id):
         index = index_id.my_id
         self.df.at[index, "Množství"] -= 1
         self.new_amount_list[index].text = str(int(self.new_amount_list[index].text) - 1)
+        self.set_label_color(index)
         print(self.df.iloc[index])
+
+    # Method that checks for amount of components. As soon as value falls bellow zero, the color of the value turns red.
+    # Other way around if the value is above zero, the color turns green.
+    def set_label_color(self, index):
+        if self.new_amount_list[index].text > str(0):
+            self.new_amount_list[index].color = (0, 1, 0, 1)
+        elif self.new_amount_list[index].text < str(0):
+            self.new_amount_list[index].color = (1, 0, 0, 1)
+        else:
+            self.new_amount_list[index].color = (1, 1, 1, 1)
+
 
     # Method that is fired whenever the user clicks on "lock_icon" button to store the changed data into the database.
     def save_data(self):

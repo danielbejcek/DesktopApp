@@ -1,4 +1,3 @@
-
 import kivy
 from kivy.config import Config
 from kivy.app import App
@@ -52,7 +51,8 @@ class HoverButton(Button, HoverBehavior):
                             "Images/minus_sign.png":"Images/minus_sign_selected.png",
                             "Images/plus_sign.png":"Images/plus_sign_selected.png",
                             "Images/lock_icon.png":"Images/unlocked_icon_selected.png",
-                            "Images/unlocked_icon.png":"Images/lock_icon_selected.png"}
+                            "Images/unlocked_icon.png":"Images/lock_icon_selected.png",
+                            "Images/pencil_edit.png":"Images/pencil_icon_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -117,6 +117,8 @@ class InventoryScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(InventoryScreen, self).__init__(**kwargs)
 
+        self.final_count = 0
+
         # Load the CSV file from the directory
         self.load_data()
 
@@ -144,7 +146,9 @@ class InventoryScreen(Screen, Transition):
             border=(0, 0, 0, 0),
             pos_hint={"center_x": .38, "center_y": .91})
         self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover, on_leave=self.notebook_button.on_button_hover_exit)
+        # self.notebook_button.bind(on_release=self.minimal_value)
         self.notebook_button.bind(on_release=self.background_change)
+
         self.ids.LY3.add_widget(self.notebook_button)
 
         self.lock_button = HoverButton(
@@ -153,7 +157,7 @@ class InventoryScreen(Screen, Transition):
             background_disabled_normal="Images/lock_icon_disabled.png",
             size_hint=(.05, .09),
             border=(0, 0, 0, 0),
-            pos_hint={"center_x": .48, "center_y": .1})
+            pos_hint={"center_x": .45, "center_y": .91})
         self.lock_button.bind(on_enter=self.lock_button.on_button_hover, on_leave=self.lock_button.on_button_hover_exit)
         self.lock_button.bind(on_release=self.update_components)
         self.ids.LY3.add_widget(self.lock_button)
@@ -184,12 +188,14 @@ class InventoryScreen(Screen, Transition):
 
 
 
+
     # Whenever we load this screen for the first time, "add_widgets" is fired that fills the screen with scrollable database
     # of components and their respective amount. This fucntion is also applied when we return to this screen. Further in the code
     # we will use a "on_leave" function that clears all of the widgets to prevent the widgets from overlapping.
     def on_pre_enter(self, *args):
             self.add_widgets(self.ids.LY4)
-            self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
+            # self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
+            # self.ids.LY6.bind(minimum_height=self.ids.LY6.setter('height'))
 
     # Method that changes visuals and also adds or clears widgets depending on the current notebook status.
     # This method is bound to a button click that traverses between an opened and closed.
@@ -214,7 +220,7 @@ class InventoryScreen(Screen, Transition):
             self.ids.LY5.clear_widgets()
             self.on_pre_enter()
 
-    # Leading the .csv file with necessary information.
+    # Leading the .csv file with necessary data.
     def load_data(self):
         data_file = "Components_data.csv"
         self.df = pd.read_csv(data_file)
@@ -247,13 +253,13 @@ class InventoryScreen(Screen, Transition):
                     self.component_label= Label(
                         text=component,
                         font_size=25,
-                        padding=(200,0,0,0),
+                        padding=(100,0,0,0),
                         bold=False)
 
                     self.amount_input = Label(
                         text=str(amount),
                         font_size=35,
-                        padding=(350, 0, 0, 0),
+                        padding=(60, 0, 0, 0),
                         bold=False)
 
                     self.minus_sign = HoverButton(
@@ -262,6 +268,7 @@ class InventoryScreen(Screen, Transition):
                         width=90,
                         height=80,
                         disabled=True,
+                        padding=(0,0,0,0),
                         opacity=.2)
 
                     self.plus_sign = HoverButton(
@@ -272,19 +279,23 @@ class InventoryScreen(Screen, Transition):
                         disabled=True,
                         opacity=.2)
 
-
-                    self.previous_amount = Label(
-                        text=str(amount),
-                        font_size=35,
-                        padding=(100, 0, 0, 0),
+                    self.value_input_button = HoverButton(
+                        background_disabled_normal="Images/pencil_edit.png",
+                        border=(0, 0, 0, 0),
+                        # font_size=20,
                         disabled=True,
-                        opacity=0)
+                        opacity=(.05),
+                        size_hint=(.25, .01),
+                        padding=(0, 0, 50, 0))
 
+                    # Setting the number of columns explicitly to match the positioning of widgets.
+                    self.ids.LY4.cols = 5
+                    self.ids.SW1.size_hint = (.484, .8)
                     layer.add_widget(self.component_label)
                     layer.add_widget(self.amount_input)
-                    layer.add_widget(self.previous_amount)
                     layer.add_widget(self.minus_sign)
                     layer.add_widget(self.plus_sign)
+                    layer.add_widget(self.value_input_button)
 
                     for divider in range(5):
                         self.divider_line_3 = Image(
@@ -299,6 +310,8 @@ class InventoryScreen(Screen, Transition):
             # Condition that lets us set specific widgets from disabled=True to False, alowing us to use the "minus_sign" and "plus_sign" widgets
             # to control the amount of the components. This condition is active only if the lock icon is pressed and becomes unlocked.
             if self.lock_button.background_normal == "Images/unlocked_icon.png":
+                self.button_to_text_list = []
+                self.text_inputs_list = []
 
                 # Interface is unlocked.
                 for index, (component, amount) in enumerate(zip(self.df["Komponent"], self.df["Množství"])):
@@ -306,13 +319,13 @@ class InventoryScreen(Screen, Transition):
                     self.component_label_2 = Label(
                         text=component,
                         font_size=25,
-                        padding=(200, 0, 0, 0),
+                        padding=(175, 0, 0, 0),
                         bold=False)
 
                     self.amount_input_2 = Label(
                         text=str(amount),
                         font_size=35,
-                        padding=(350, 0, 0, 0),
+                        padding=(310, 0, 10, 0),
                         bold=False)
 
                     self.minus_sign_2 = HoverButton(
@@ -344,23 +357,55 @@ class InventoryScreen(Screen, Transition):
                     # Each iteration if this Label is then added to a list to help us connect it with corresponding components.
                     self.new_amount = Label(
                         text=str(0),
-                        font_size=35,
-                        padding=(100, 0, 0, 0),
+                        font_size=30,
+                        padding=(110, 0, 0, 0),
                         disabled=False,
-                        color=(0,0,0,1),
+                        color=(1,1,1,1),
                         bold=True)
                     self.new_amount_list.append(self.new_amount)
 
+                    self.value_input_button = HoverButton(
+                        background_normal="Images/pencil_edit.png",
+                        background_down="Images/pencil_edit.png",
+                        border=(0, 0, 0, 0),
+                        opacity=(.7),
+                        size_hint=(.35, .01),
+                        padding=(0, 0, 0, 0))
+                    self.button_to_text_list.append(self.value_input_button)
+                    self.value_input_button.bind(on_enter=self.value_input_button.on_button_hover, on_leave=self.value_input_button.on_button_hover_exit)
+                    self.value_input_button.bind(on_release=self.button_to_text)
+                    self.value_input_button.my_id = index
 
+                    self.text_value_input = TextInput(
+                        background_active="Images/border_icon.png",
+                        background_disabled_normal="Images/border_icon.png",
+                        multiline=False,
+                        border=(0, 0, 0, 0),
+                        halign="right",
+                        font_size=30,
+                        cursor_color=(0, 0, 0, 1),
+                        foreground_color=(0, 0, 0, 1),
+                        opacity=(0),
+                        disabled=False,
+                        size_hint=(.6, .2),
+                        padding=(10, 22),
+                        on_text_validate=self.custom_text_validate)
+                    self.text_inputs_list.append(self.text_value_input)
+                    self.text_value_input.my_id = index
+                    self.text_value_input.bind(focus=self.unfocus_text_input)
 
-
+                    self.ids.SW1.size_hint = (.55,.8)
+                    self.ids.LY4.cols = 7
                     layer.add_widget(self.component_label_2)
                     layer.add_widget(self.amount_input_2)
                     layer.add_widget(self.new_amount)
                     layer.add_widget(self.minus_sign_2)
                     layer.add_widget(self.plus_sign_2)
-
-                    for divider in range(5):
+                    layer.add_widget(self.value_input_button)
+                    layer.add_widget(self.text_value_input)
+                    iteration_count = 0
+                    for divider in range(7):
+                        iteration_count += 1
                         self.divider_line_2 = Image(
                             source="Images/divider_3.png",
                             size_hint_y=None,
@@ -369,6 +414,9 @@ class InventoryScreen(Screen, Transition):
                             width=2,
                             fit_mode="fill")
                         layer.add_widget(self.divider_line_2)
+                        if iteration_count > 6:
+                            self.divider_line_2.opacity = (0)
+
 
 
 
@@ -377,18 +425,22 @@ class InventoryScreen(Screen, Transition):
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
             self.lock_button.disabled = True
             iteration_count = 0
+
             for component, amount in zip(self.df["Komponent"], self.df["Množství"]):
                 self.component_label= Label(
                     text=component,
                     size_hint=(.8,1),
                     font_size=18)
 
-                self.amount_input = Label(
+                self.amount_input_3 = Label(
                     text=str(amount),
                     size_hint=(.8,1),
-                    font_size=22)
+                    font_size=22,)
+                if amount < 11:
+                    self.amount_input_3.color=(1,0,0,1)
+
                 layer.add_widget(self.component_label)
-                layer.add_widget(self.amount_input)
+                layer.add_widget(self.amount_input_3)
                 iteration_count += 1
 
                 # In order to preserve a correct division by "divider_line". We need to add a new variable "iteration_count".
@@ -400,10 +452,9 @@ class InventoryScreen(Screen, Transition):
                             source="Images/divider_2.png",
                             size_hint_y=None,
                             height=10,
-                            width=3)
+                            width=5)
                         layer.add_widget(self.divider_line)
                         iteration_count = 0
-
 
     # Method that allows us to change values of a "new_amount" Label. It's directly connected to the database and it's being updated real-time.
     # Each widget has its index as a 'Primary key' to help us navigate between the iterations and control which component's value we want to change.
@@ -411,18 +462,55 @@ class InventoryScreen(Screen, Transition):
     # With the use of "index" variable we are able to connect the specific item in the list to a widget created by the loop.
     # Change of values in the "self.new_amount.text" Label is done by modifying the list items, not by accessing the "self.new_amount" widget directly.
     def increment_value(self, index_id):
-        index = index_id.my_id
-        self.df.at[index, "Množství"] += 1
-        self.new_amount_list[index].text = str(int(self.new_amount_list[index].text) + 1)
-        self.set_label_color(index)
-        print(self.df.iloc[index])
+        index_plus = index_id.my_id
+        value = "plus"
+        self.new_amount_list[index_plus].text = str(int(self.new_amount_list[index_plus].text) + 1)
+        self.set_label_color(index_plus)
+        self.count_values(index_plus, value)
+
 
     def decrement_value(self, index_id):
+        index_minus = index_id.my_id
+        value = "minus"
+        self.new_amount_list[index_minus].text = str(int(self.new_amount_list[index_minus].text) - 1)
+        self.set_label_color(index_minus)
+        self.count_values(index_minus, value)
+
+    def button_to_text(self, index_id):
+        button_index = index_id.my_id
+        self.text_inputs_list[button_index].disabled = False
+        self.text_inputs_list[button_index].opacity = 1
+        self.text_inputs_list[button_index].focused = True
+
+    def custom_text_validate(self, index_id):
+        value = "custom"
+        self.text_index = index_id.my_id
+        self.text_inputs_list[self.text_index].disabled = True
+        self.text_inputs_list[self.text_index].focused = False
+        self.text_inputs_list[self.text_index].opacity = 0
+
+        self.user_amount = int(self.text_inputs_list[self.text_index].text)
+        self.new_amount_list[self.text_index].text = str(self.user_amount)
+        self.set_label_color(self.text_index)
+        self.count_values(self.text_index, value)
+
+    def count_values(self, index, value):
+        if value == "plus":
+            self.df.at[index, "Množství"] += 1
+        elif value == "minus":
+            self.df.at[index, "Množství"] -= 1
+        elif value == "custom":
+            self.df.at[index, "Množství"] += self.user_amount
+
+    # Method which allows us to unfocus and disable a text input field as soon as it's not focused.
+    # We are setting and empty string to clear the field on un_focus event.
+    def unfocus_text_input(self, index_id, value):
         index = index_id.my_id
-        self.df.at[index, "Množství"] -= 1
-        self.new_amount_list[index].text = str(int(self.new_amount_list[index].text) - 1)
-        self.set_label_color(index)
-        print(self.df.iloc[index])
+        if not value:
+            self.text_inputs_list[index].disabled = True
+            self.text_inputs_list[index].opacity = 0
+            # self.text_inputs_list[index].text = ""
+
 
     # Method that checks for amount of components. As soon as value falls bellow zero, the color of the value turns red.
     # Other way around if the value is above zero, the color turns green.
@@ -437,8 +525,10 @@ class InventoryScreen(Screen, Transition):
 
     # Method that is fired whenever the user clicks on "lock_icon" button to store the changed data into the database.
     def save_data(self):
+        # self.df.at[self.text_index, "Množství"] += self.user_amount
         data_file = "Components_data.csv"
         self.df.to_csv(data_file, index=False)
+
 
 
     # Function that cleans the page of all the widgets, allowing us to return to the page without overlapping widgets.

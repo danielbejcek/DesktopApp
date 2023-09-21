@@ -103,7 +103,6 @@ class MainScreen(Screen, Transition):
         self.inventory_button.bind(on_release=lambda x: self.transition("Third"))
 
 
-
         self.import_button = HoverButton(
             background_normal="Images/import_text.png",
             background_down="Images/import_text.png",
@@ -117,10 +116,14 @@ class InventoryScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(InventoryScreen, self).__init__(**kwargs)
 
-        self.final_count = 0
-
-        # Load the CSV file from the directory
+        # Load the CSV file from the directory.
         self.load_data()
+
+        # Empty list in wich we store all the numerical values from our CSV database.
+        # This list later servers as a merge between the values that are to be changed in the database.
+        self.final_count = []
+        for self.final_amount in (self.df["Množství"]):
+            self.final_count.append(self.final_amount)
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
@@ -146,9 +149,7 @@ class InventoryScreen(Screen, Transition):
             border=(0, 0, 0, 0),
             pos_hint={"center_x": .38, "center_y": .91})
         self.notebook_button.bind(on_enter=self.notebook_button.on_button_hover, on_leave=self.notebook_button.on_button_hover_exit)
-        # self.notebook_button.bind(on_release=self.minimal_value)
         self.notebook_button.bind(on_release=self.background_change)
-
         self.ids.LY3.add_widget(self.notebook_button)
 
         self.lock_button = HoverButton(
@@ -172,10 +173,7 @@ class InventoryScreen(Screen, Transition):
             self.notebook_button.disabled = True
             instance.background_normal = "Images/unlocked_icon.png"
             instance.background_down = "Images/lock_icon.png"
-
             self.add_widgets(self.ids.LY4)
-
-
 
         # Widgets are locked.
         if instance.background_normal == "Images/lock_icon_selected.png":
@@ -183,19 +181,13 @@ class InventoryScreen(Screen, Transition):
             self.notebook_button.disabled = False
             instance.background_normal = "Images/lock_icon.png"
             instance.background_down = "Images/unlocked_icon.png"
-
             self.add_widgets(self.ids.LY4)
-
-
-
 
     # Whenever we load this screen for the first time, "add_widgets" is fired that fills the screen with scrollable database
     # of components and their respective amount. This fucntion is also applied when we return to this screen. Further in the code
     # we will use a "on_leave" function that clears all of the widgets to prevent the widgets from overlapping.
     def on_pre_enter(self, *args):
             self.add_widgets(self.ids.LY4)
-            # self.ids.LY4.bind(minimum_height=self.ids.LY4.setter('height'))
-            # self.ids.LY6.bind(minimum_height=self.ids.LY6.setter('height'))
 
     # Method that changes visuals and also adds or clears widgets depending on the current notebook status.
     # This method is bound to a button click that traverses between an opened and closed.
@@ -206,7 +198,6 @@ class InventoryScreen(Screen, Transition):
             instance.size_hint=(.08,.1)
             instance.background_normal = "Images/notebook_opened.png"
             instance.background_down = "Images/notebook_opened.png"
-
             self.ids.LY4.clear_widgets()
             self.add_widgets(self.ids.LY5)
 
@@ -216,11 +207,10 @@ class InventoryScreen(Screen, Transition):
             instance.size_hint=(.04,.1)
             instance.background_normal="Images/notebook_closed.png"
             instance.background_down="Images/notebook_closed.png"
-
             self.ids.LY5.clear_widgets()
             self.on_pre_enter()
 
-    # Leading the .csv file with necessary data.
+    # Loading the .csv file with necessary data.
     def load_data(self):
         data_file = "Components_data.csv"
         self.df = pd.read_csv(data_file)
@@ -243,12 +233,15 @@ class InventoryScreen(Screen, Transition):
             if self.lock_button.background_normal == "Images/lock_icon.png":
                 self.lock_button.disabled = False
 
-                # Updates the .csv file with modified values.
-                self.save_data()
+
+                # Updates the .csv file with modified values. Whenever user has finished making changes in the unlocked interface,
+                # proceeds to click the lock icon button, only then the changes in the database are saved.
+                self.save_data(self.final_count)
 
                 # We created an empty list for later use.
                 self.new_amount_list = []
-                for component, amount in zip(self.df["Komponent"], self.df["Množství"]):
+
+                for index, (component, amount) in enumerate(zip(self.df["Komponent"], self.df["Množství"])):
 
                     self.component_label= Label(
                         text=component,
@@ -282,7 +275,6 @@ class InventoryScreen(Screen, Transition):
                     self.value_input_button = HoverButton(
                         background_disabled_normal="Images/pencil_edit.png",
                         border=(0, 0, 0, 0),
-                        # font_size=20,
                         disabled=True,
                         opacity=(.05),
                         size_hint=(.25, .01),
@@ -310,7 +302,7 @@ class InventoryScreen(Screen, Transition):
             # Condition that lets us set specific widgets from disabled=True to False, alowing us to use the "minus_sign" and "plus_sign" widgets
             # to control the amount of the components. This condition is active only if the lock icon is pressed and becomes unlocked.
             if self.lock_button.background_normal == "Images/unlocked_icon.png":
-                self.button_to_text_list = []
+
                 self.text_inputs_list = []
 
                 # Interface is unlocked.
@@ -353,17 +345,18 @@ class InventoryScreen(Screen, Transition):
                     self.plus_sign_2.my_id = index
 
 
-                    # "new_amount" Label is a widget that the user can modify according to his needs with the use of "plus_sign_2" and "minus_sign_2" buttons.
-                    # Each iteration if this Label is then added to a list to help us connect it with corresponding components.
+                    # "new_amount" Label is a widget that the user can modify according to his needs with the use of "plus_sign_2", "minus_sign_2" and "value_input_button" buttons.
+                    # Each iteration of this Label is then added to a list to help us connect it with corresponding components.
                     self.new_amount = Label(
                         text=str(0),
                         font_size=30,
                         padding=(110, 0, 0, 0),
                         disabled=False,
-                        color=(1,1,1,1),
+                        color=(1,1,1,0),
                         bold=True)
                     self.new_amount_list.append(self.new_amount)
 
+                    # Widget that allows the user to create a text_input field, which is automatically focused.
                     self.value_input_button = HoverButton(
                         background_normal="Images/pencil_edit.png",
                         background_down="Images/pencil_edit.png",
@@ -371,11 +364,13 @@ class InventoryScreen(Screen, Transition):
                         opacity=(.7),
                         size_hint=(.35, .01),
                         padding=(0, 0, 0, 0))
-                    self.button_to_text_list.append(self.value_input_button)
                     self.value_input_button.bind(on_enter=self.value_input_button.on_button_hover, on_leave=self.value_input_button.on_button_hover_exit)
                     self.value_input_button.bind(on_release=self.button_to_text)
                     self.value_input_button.my_id = index
 
+                    # Creating a empty text_input field in which user can enter numerical value.
+                    # After user validates the field with an press of a 'enter' button. Value from the text field is transfered into "new_amount" widget.
+                    # After validation, text field becomes disabled and hidden.
                     self.text_value_input = TextInput(
                         background_active="Images/border_icon.png",
                         background_disabled_normal="Images/border_icon.png",
@@ -386,7 +381,7 @@ class InventoryScreen(Screen, Transition):
                         cursor_color=(0, 0, 0, 1),
                         foreground_color=(0, 0, 0, 1),
                         opacity=(0),
-                        disabled=False,
+                        disabled=True,
                         size_hint=(.6, .2),
                         padding=(10, 22),
                         on_text_validate=self.custom_text_validate)
@@ -394,6 +389,7 @@ class InventoryScreen(Screen, Transition):
                     self.text_value_input.my_id = index
                     self.text_value_input.bind(focus=self.unfocus_text_input)
 
+                    # Custom configuration of a layout to fit widgets correctly.
                     self.ids.SW1.size_hint = (.55,.8)
                     self.ids.LY4.cols = 7
                     layer.add_widget(self.component_label_2)
@@ -403,6 +399,7 @@ class InventoryScreen(Screen, Transition):
                     layer.add_widget(self.plus_sign_2)
                     layer.add_widget(self.value_input_button)
                     layer.add_widget(self.text_value_input)
+
                     iteration_count = 0
                     for divider in range(7):
                         iteration_count += 1
@@ -436,6 +433,8 @@ class InventoryScreen(Screen, Transition):
                     text=str(amount),
                     size_hint=(.8,1),
                     font_size=22,)
+
+                # Once a certain amount of components is bellow critical number, value will now be displayed in red color.
                 if amount < 11:
                     self.amount_input_3.color=(1,0,0,1)
 
@@ -476,12 +475,16 @@ class InventoryScreen(Screen, Transition):
         self.set_label_color(index_minus)
         self.count_values(index_minus, value)
 
+    # Method that allows us to display and immediately focus a new text input field.
     def button_to_text(self, index_id):
         button_index = index_id.my_id
         self.text_inputs_list[button_index].disabled = False
         self.text_inputs_list[button_index].opacity = 1
         self.text_inputs_list[button_index].focused = True
 
+    # After pressing enter, while text input widget is active, this method will transfer the value into the "new_amount" widget.
+    # To maintain proper functionality, if the "new_amount" value has not yet been modified (value = 0), new value will now be now added.
+    # Although if user decides to correct his previous value, the "new_amount" will be reset and equal to the original value.
     def custom_text_validate(self, index_id):
         value = "custom"
         self.text_index = index_id.my_id
@@ -490,29 +493,40 @@ class InventoryScreen(Screen, Transition):
         self.text_inputs_list[self.text_index].opacity = 0
 
         self.user_amount = int(self.text_inputs_list[self.text_index].text)
-        self.new_amount_list[self.text_index].text = str(self.user_amount)
+        if self.new_amount_list[self.text_index].text == str(0):
+            self.new_amount_list[self.text_index].text = str(self.user_amount)
+        elif self.new_amount_list[self.text_index].text != str(0):
+            self.new_amount_list[self.text_index].text = str(self.user_amount)
+            self.final_count[self.text_index] = self.df.at[self.text_index, "Množství"]
         self.set_label_color(self.text_index)
         self.count_values(self.text_index, value)
 
+    # To prevent the user to make changes in the database while still 'unlocked interface' we created an empty list "self.final_count".
+    # We want all the changes to the database occur only after we exit from the unlocked interface and enter into a locked interface (by clicking the lock_icon).
+    # Instead of making changes directly to the core database, we appended all of the component amounts into "self.final_count" list and make changes there.
+    # Once user clicks a "plus_sign", "minus_sign" or "text_input_button", the list's components are updated on a corresponding index.
     def count_values(self, index, value):
         if value == "plus":
-            self.df.at[index, "Množství"] += 1
+            self.final_count[index] += 1
+
         elif value == "minus":
-            self.df.at[index, "Množství"] -= 1
+            self.final_count[index] -= 1
+
         elif value == "custom":
-            self.df.at[index, "Množství"] += self.user_amount
+            self.final_count[index] += self.user_amount
+
+
 
     # Method which allows us to unfocus and disable a text input field as soon as it's not focused.
-    # We are setting and empty string to clear the field on un_focus event.
     def unfocus_text_input(self, index_id, value):
         index = index_id.my_id
         if not value:
             self.text_inputs_list[index].disabled = True
             self.text_inputs_list[index].opacity = 0
-            # self.text_inputs_list[index].text = ""
 
 
-    # Method that checks for amount of components. As soon as value falls bellow zero, the color of the value turns red.
+
+    # Method that checks for the amount of components. As soon as value falls bellow 0, the color of the value turns red.
     # Other way around if the value is above zero, the color turns green.
     def set_label_color(self, index):
         if self.new_amount_list[index].text > str(0):
@@ -520,12 +534,15 @@ class InventoryScreen(Screen, Transition):
         elif self.new_amount_list[index].text < str(0):
             self.new_amount_list[index].color = (1, 0, 0, 1)
         else:
-            self.new_amount_list[index].color = (1, 1, 1, 1)
+            self.new_amount_list[index].color = (1, 1, 1, 0)
 
 
     # Method that is fired whenever the user clicks on "lock_icon" button to store the changed data into the database.
-    def save_data(self):
-        # self.df.at[self.text_index, "Množství"] += self.user_amount
+    # We loop trough the CSV file and merge the pending changes in "self.final_count" list into the default database.
+    def save_data(self, final_count):
+        for index, amount in enumerate(self.df["Množství"]):
+            self.df.at[index, "Množství"] = self.final_count[index]
+
         data_file = "Components_data.csv"
         self.df.to_csv(data_file, index=False)
 

@@ -1,4 +1,6 @@
 import kivy
+import pandas as pd
+import tabula
 from kivy.config import Config
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen, WipeTransition
@@ -8,19 +10,25 @@ from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.animation import Animation
 from kivy.clock import Clock
+from kivy.graphics import Rectangle
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
+from kivy.properties import NumericProperty
+from kivy.properties import StringProperty
 from kivy.event import EventDispatcher
 from HoverButton import HoverBehavior
 from kivy.uix.textinput import TextInput
-from DataFrame import *
-import pandas as pd
+from DropField import *
+from plyer import filechooser
+from kivy.lang import Builder
 
-# Class that allows transitions between screens.
-# Using this we are preventing creating redundant switch screen methods within each class.
+"""
+Class that allows transitions between screens.
+Using this we are preventing creating redundant switch screen methods within each class.
+"""
 class Transition:
     def transition(self, screen_name):
         self.manager.transition = WipeTransition()
@@ -32,10 +40,11 @@ class Transition:
         self.manager.current = "Second"
         self.manager.transition = WipeTransition()
 
-
-# Custom class HoverButton(original creator: 'Olivier POYEN') fills the role as a highlighter of a button.
-# Once mouse is hovering over a specified widget, its custom events (on_enter,on_leave) are fired,
-# allowing us to modify the properties of the widget.
+"""
+Custom class HoverButton(original creator: 'Olivier POYEN') fills the role as a highlighter of a button.
+Once mouse is hovering over a specified widget, its custom events (on_enter,on_leave) are fired,
+allowing us to modify the properties of the widget.
+"""
 class HoverButton(Button, HoverBehavior):
     def __init__(self, **kwargs):
         super(HoverButton, self).__init__(**kwargs)
@@ -111,7 +120,7 @@ class MainScreen(Screen, Transition):
             border=(0, 0, 0, 0))
         self.ids.LY2.add_widget(self.import_button)
         self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
-
+        self.import_button.bind(on_release=lambda x: self.transition("Fourth"))
 class InventoryScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(InventoryScreen, self).__init__(**kwargs)
@@ -560,16 +569,121 @@ class InventoryScreen(Screen, Transition):
         self.notebook_button.disabled = False
 
 
-class ImportScreen(Screen, Transition):
+class ImportScreen(Screen, Transition, DropField):
+    # opacity_value = NumericProperty(0)
+    source_image_1 = StringProperty("Images/importscreen_edit_2.png")
+
+
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)
-        pass
+
+        # self.drop_field = DropField(size_hint=(1, None))
+        # self.drop_field.bind(on_dropfile=self.on_file_drop)
+        # self.ids.LY6.add_widget(self.drop_field)
+
+
+        self.home_button = HoverButton(
+            background_normal="Images/home_button_icon.png",
+            background_down="Images/home_button_icon.png",
+            size_hint=(.065, .1),
+            border=(0, 0, 0, 0),
+            pos_hint={"center_x": .94, "top_y": .94})
+        self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
+        self.home_button.bind(on_release=self.home_page)
+        self.ids.LY6.add_widget(self.home_button)
+
+        self.open_file_button = Button(
+            text="Select file",
+            size_hint=(.1,.1),
+            pos_hint={"center_x": .24, "center_y": .4})
+        self.open_file_button.bind(on_release=self.choose_file)
+        self.ids.LY6.add_widget(self.open_file_button)
+
+        self.result_image = Image(
+            source="Images/border_black_edit.png",
+            allow_stretch=True,
+            pos_hint={"center_x": .5, "center_y": .5})
+
+
+
+
+
+    """
+    Method that pops up a Windows browser, from which user can select a file to work with.
+    If user selects a new .pdf file, previous widget will be cleared to prevent overlapping.
+    """
+    def choose_file(self, instance):
+        self.path = filechooser.open_file(title="Select a file ...", filters=[("PDF Files", "*.pdf")])
+        if self.path:
+
+            self.open_file_button.opacity = 0
+            self.source_image_1 = "Images/importscreen_edit_2_blurred.png"
+            # self.opacity_value = 1
+            self.ids.LY65.clear_widgets()
+            self.create_table(self.path)
+            self.ids.LYimage.add_widget(self.result_image)
+        elif self.path == None:
+            print("No file selected")
+
+
+    """
+    Method that pulls data from imported .pdf file and selects the first index from the list. 
+    Argument needs to be passed as a string (self.path[0]) not a list.
+    """
+    def create_table(self, pdf_file):
+        tables = tabula.read_pdf(str(pdf_file[0]), pages="all")
+        df = pd.concat(tables)
+
+        col_component = df.columns[0]
+        col_amount = df.columns[1]
+        component = df[col_component]
+        amount = df[col_amount]
+        data_frame = {"Component": component, "Amount": amount}
+
+        for index, (component, amount) in enumerate(zip(data_frame["Component"], data_frame["Amount"])):
+            self.imported_component = Label(
+                text=component,
+                font_size=20,
+                color=(1, 1, 1, 1),
+                bold=False)
+            self.ids.LY65.add_widget(self.imported_component)
+
+            self.imported_amount = Label(
+                text=str(amount),
+                font_size=20,
+                color=(1,1,1,1),
+                bold=True)
+            self.ids.LY65.add_widget(self.imported_amount)
+
+            for divider in range(2):
+                self.divider_line = Image(
+                    source="Images/divider_3.png",
+                    size_hint_y=None,
+                    height=10,
+                    width=5)
+                self.ids.LY65.add_widget(self.divider_line)
+
+
+    def on_leave(self, *args):
+        self.ids.LY65.clear_widgets()
+        self.opacity_value = 0
+
+
+
+
+
+    # def on_file_drop(self, instance, touch):
+    #     file_path = touch.profile.get("file_path", "")
+    #     if file_path:
+    #         print("I have been deployed")
+
 
 
 
 
 class WindowManager(ScreenManager):
     pass
+
 
 class SaniStore(App):
     def build(self):

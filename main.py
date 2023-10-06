@@ -25,6 +25,9 @@ from DropField import *
 from plyer import filechooser
 from kivy.lang import Builder
 
+
+
+
 """
 Class that allows transitions between screens.
 Using this we are preventing creating redundant switch screen methods within each class.
@@ -54,6 +57,8 @@ class HoverButton(Button, HoverBehavior):
         # Whenever we want to add additional button, that includes a highlight function, we just need to update the path within this dictionary.
         self.images_path = {"Images/inventory_text.png": "Images/inventory_text_selected.png",
                             "Images/import_text.png": "Images/import_text_selected.png",
+                            "Images/export_text.png":"Images/export_text_selected.png",
+                            "Images/exit_button.png":"Images/exit_button_selected.png",
                             "Images/home_button_icon.png":"Images/home_button_icon_selected.png",
                             "Images/notebook_closed.png":"Images/notebook_closed_selected.png",
                             "Images/notebook_opened.png":"Images/notebook_opened_selected.png",
@@ -61,7 +66,9 @@ class HoverButton(Button, HoverBehavior):
                             "Images/plus_sign.png":"Images/plus_sign_selected.png",
                             "Images/lock_icon.png":"Images/unlocked_icon_selected.png",
                             "Images/unlocked_icon.png":"Images/lock_icon_selected.png",
-                            "Images/pencil_edit.png":"Images/pencil_icon_selected.png"}
+                            "Images/pencil_edit.png":"Images/pencil_icon_selected.png",
+                            "Images/closed_folder.png":"Images/opened_folder.png",
+                            "Images/arrow_pick.png":"Images/arrow_pick_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -103,7 +110,7 @@ class MainScreen(Screen, Transition):
             background_normal="Images/inventory_text.png",
             background_down="Images/inventory_text.png",
             font_size=15,
-            size_hint=(.8, 1),
+            size_hint=(.2, .04),
             border=(0, 0, 0, 0))
 
         self.ids.LY2.add_widget(self.inventory_button)
@@ -116,11 +123,33 @@ class MainScreen(Screen, Transition):
             background_normal="Images/import_text.png",
             background_down="Images/import_text.png",
             font_size=15,
-            size_hint=(.8, 1),
+            size_hint=(.2, .04),
             border=(0, 0, 0, 0))
         self.ids.LY2.add_widget(self.import_button)
         self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
         self.import_button.bind(on_release=lambda x: self.transition("Fourth"))
+
+        self.export_button = HoverButton(
+            background_normal="Images/export_text.png",
+            background_down="Images/export_text.png",
+            font_size=30,
+            size_hint=(.2, .04),
+            border=(0, 0, 0, 0))
+        self.export_button.bind(on_enter=self.export_button.on_button_hover, on_leave=self.export_button.on_button_hover_exit)
+        self.export_button.bind(on_release=lambda x: self.transition("Fifth"))
+        self.ids.LY2.add_widget(self.export_button)
+
+        self.exit_button = HoverButton(
+            background_normal="Images/exit_button.png",
+            background_down="Images/exit_button.png",
+            size_hint=(.06, .09),
+            pos_hint={"center_x": .93, "center_y": .09},
+            border=(0, 0, 0, 0))
+        self.exit_button.bind(on_enter=self.exit_button.on_button_hover, on_leave=self.exit_button.on_button_hover_exit)
+        self.exit_button.bind(on_release=self.exit_app)
+        self.ids.LY25.add_widget(self.exit_button)
+    def exit_app(self, instance):
+        App.get_running_app().stop()
 class InventoryScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(InventoryScreen, self).__init__(**kwargs)
@@ -137,17 +166,17 @@ class InventoryScreen(Screen, Transition):
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
             background_down="Images/home_button_icon.png",
-            size_hint=(.065,.1),
+            size_hint=(.06,.095),
             border=(0,0,0,0),
-            pos_hint={"center_x": .93,"top_y": .95})
+            pos_hint={"center_x": .94,"center_y": .09})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
         self.ids.LY3.add_widget(self.home_button)
 
         self.current_state_image = Image(
             source="Images/current_state.png",
-            size_hint=(.5, .5),
-            pos_hint={"center_x": .16, "center_y": .9})
+            size_hint=(.3, .5),
+            pos_hint={"center_x": .175, "center_y": .92})
         self.ids.LY3.add_widget(self.current_state_image)
 
         self.notebook_button = HoverButton(
@@ -198,10 +227,12 @@ class InventoryScreen(Screen, Transition):
     def on_pre_enter(self, *args):
             self.add_widgets(self.ids.LY4)
 
-    # Method that changes visuals and also adds or clears widgets depending on the current notebook status.
-    # This method is bound to a button click that traverses between an opened and closed.
-    # Whenever we click a respective button and meet a condition thats states "notebook_closed",
-    # we fire a "clear_widgets" function that deletes widgets from previous layout and adds new widgets to a new layout.
+    """
+    Method that changes visuals and also adds or clears widgets depending on the current notebook status.
+    This method is bound to a button click that traverses between an opened and closed.
+    Whenever we click a respective button and meet a condition thats states "notebook_closed",
+    we fire a "clear_widgets" function that deletes widgets from previous layout and adds new widgets to a new layout.
+    """
     def background_change(self, instance):
         if instance.background_normal and instance.background_down == "Images/notebook_closed.png":
             instance.size_hint=(.08,.1)
@@ -211,7 +242,7 @@ class InventoryScreen(Screen, Transition):
             self.add_widgets(self.ids.LY5)
 
         # Same utility only the other way around. We delete widgets from new layout only to fire a "on_pre_enter" function,
-        # that brings us back to the first layout with corresponding widgets included.
+        # that brings us back to the first layout with corresponding widgets included."""
         elif instance.background_normal and instance.background_down == "Images/notebook_opened.png":
             instance.size_hint=(.04,.1)
             instance.background_normal="Images/notebook_closed.png"
@@ -219,22 +250,25 @@ class InventoryScreen(Screen, Transition):
             self.ids.LY5.clear_widgets()
             self.on_pre_enter()
 
-    # Loading the .csv file with necessary data.
+    """
+    Loading the .csv file with necessary data.
+    """
     def load_data(self):
         data_file = "Components_data.csv"
         self.df = pd.read_csv(data_file)
 
-    # Method that creates widgets depending on the current layout. We switch between "notebook_opened" and "notebook_closed".
-    # With series of for loops we create a database of warehouse stock. Under first condition, the database is scrollable
-    # and set into two columns.
+    """
+    Method that creates widgets depending on the current layout. We switch between "notebook_opened" and "notebook_closed".
+    With series of for loops we create a database of warehouse stock. Under first condition, the database is scrollable
+    and set into two columns.
 
-    # "add_widgets" method now also servers as a bridge between locked and unlocked status of the stock.
-    # Whenever a lock icon is clicked and becomes unlocked, additional widgets are instantiated ("minus_sign", "plus_sign", "previous_amount").
-    # These widgets serve as a alternative mode that allows us to manually change the values on each component.
+    "add_widgets" method now also servers as a bridge between locked and unlocked status of the stock.
+    Whenever a lock icon is clicked and becomes unlocked, additional widgets are instantiated ("minus_sign", "plus_sign", "previous_amount").
+    These widgets serve as a alternative mode that allows us to manually change the values on each component.
 
-    # Unfortunately we face a necessary redundancy in the upcoming code, in each for loop widgets are duplicated to prevent an error:
-    # "WidgetException: Cannot add <kivy.uix.label.Label object at 0x...>, it already has a parent".
-
+    Unfortunately we face a necessary redundancy in the upcoming code, in each for loop widgets are duplicated to prevent an error:
+    "WidgetException: Cannot add <kivy.uix.label.Label object at 0x...>, it already has a parent".
+    """
     def add_widgets(self, layer):
 
         # Interface is locked.
@@ -370,7 +404,7 @@ class InventoryScreen(Screen, Transition):
                         background_normal="Images/pencil_edit.png",
                         background_down="Images/pencil_edit.png",
                         border=(0, 0, 0, 0),
-                        opacity=(.7),
+                        opacity=(.6),
                         size_hint=(.35, .01),
                         padding=(0, 0, 0, 0))
                     self.value_input_button.bind(on_enter=self.value_input_button.on_button_hover, on_leave=self.value_input_button.on_button_hover_exit)
@@ -574,8 +608,12 @@ class ImportScreen(Screen, Transition, DropField):
     source_image_1 = StringProperty("Images/importscreen_edit_2.png")
 
 
+
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)
+
+        data_file = "Components_data.csv"
+        self.base_df = pd.read_csv(data_file)
 
         # self.drop_field = DropField(size_hint=(1, None))
         # self.drop_field.bind(on_dropfile=self.on_file_drop)
@@ -592,20 +630,21 @@ class ImportScreen(Screen, Transition, DropField):
         self.home_button.bind(on_release=self.home_page)
         self.ids.LY6.add_widget(self.home_button)
 
-        self.open_file_button = Button(
-            text="Select file",
-            size_hint=(.1,.1),
+        self.open_file_button = HoverButton(
+            background_normal="Images/closed_folder.png",
+            background_down="Images/closed_folder.png",
+            size_hint=(.1,.15),
+            border=(0, 0, 0, 0),
             pos_hint={"center_x": .24, "center_y": .4})
         self.open_file_button.bind(on_release=self.choose_file)
+        self.open_file_button.bind(on_enter=self.open_file_button.on_button_hover, on_leave=self.open_file_button.on_button_hover_exit)
+
         self.ids.LY6.add_widget(self.open_file_button)
 
         self.result_image = Image(
             source="Images/border_black_edit.png",
             allow_stretch=True,
             pos_hint={"center_x": .5, "center_y": .5})
-
-
-
 
 
     """
@@ -632,13 +671,20 @@ class ImportScreen(Screen, Transition, DropField):
     """
     def create_table(self, pdf_file):
         tables = tabula.read_pdf(str(pdf_file[0]), pages="all")
-        df = pd.concat(tables)
+        user_df = pd.concat(tables)
 
-        col_component = df.columns[0]
-        col_amount = df.columns[1]
-        component = df[col_component]
-        amount = df[col_amount]
+        col_component = user_df.columns[0]
+        col_amount = user_df.columns[1]
+        component = user_df[col_component]
+        amount = user_df[col_amount]
         data_frame = {"Component": component, "Amount": amount}
+        print(data_frame["Component"])
+        print(self.base_df["Komponent"])
+        # corresponding_component = []
+        # if data_frame["Component"] in self.base_df["Komponent"]:
+        #     corresponding_component.append(self.base_df["Amount"])
+        # print(corresponding_component)
+
 
         for index, (component, amount) in enumerate(zip(data_frame["Component"], data_frame["Amount"])):
             self.imported_component = Label(
@@ -654,6 +700,9 @@ class ImportScreen(Screen, Transition, DropField):
                 color=(1,1,1,1),
                 bold=True)
             self.ids.LY65.add_widget(self.imported_amount)
+
+            # self.correspnding_amount = Label
+
 
             for divider in range(2):
                 self.divider_line = Image(
@@ -678,9 +727,141 @@ class ImportScreen(Screen, Transition, DropField):
     #         print("I have been deployed")
 
 
+class ExportScreen(Screen, Transition):
+
+    def __init__(self, **kwargs):
+        super(ExportScreen, self).__init__(**kwargs)
+        self.df = pd.read_csv("Components_data.csv")
+
+        self.home_button = HoverButton(
+            background_normal="Images/home_button_icon.png",
+            background_down="Images/home_button_icon.png",
+            size_hint=(.06, .095),
+            border=(0, 0, 0, 0),
+            pos_hint={"center_x": .94, "center_y": .09})
+        self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
+        self.home_button.bind(on_release=self.home_page)
+        self.ids.LY8.add_widget(self.home_button)
+
+        # Setting "size_hint" of LY10 layout explicitly so we can modify its values in python code.
+        # self.ids.LY10.size_hint = (.4,.06)
+
+    def on_pre_enter(self, *args):
+        self.tuple_list = []
+        self.children_list = []
+
+        for placeholder in range(38):
+            x = "x"
+            self.children_list.append(x)
+
+        for index, component in enumerate(self.df["Komponent"]):
+            self.component_label = Label(
+                text=component,
+                font_size=20,
+                size_hint=(1,None))
+
+            self.arrow_button = HoverButton(
+                background_normal="Images/arrow_pick.png",
+                background_down="Images/arrow_pick.png",
+                background_disabled_normal="Images/arrow_pick_disabled.png",
+                size_hint=(.2, .05),
+                border=(0, 0, 0, 0))
+            self.arrow_button.my_id = index
+            self.arrow_button.bind(on_enter=self.arrow_button.on_button_hover,on_leave=self.arrow_button.on_button_hover_exit)
+            self.arrow_button.bind(on_release=self.transfer_component)
 
 
 
+
+            tuple_data = (self.component_label, self.arrow_button)
+            self.tuple_list.append(tuple_data)
+
+            self.ids.LY9.add_widget(self.component_label)
+            self.ids.LY9.add_widget(self.arrow_button)
+
+    """
+    "self.component_list.items()" returns a list of tuples where each tuple contains a Label (key) and a Button (value).
+    With use of a "list(..)" we convert it into a regular list. "[index]" extracts the tuple at the specified index from the list.
+    Label, button is a tuple unpacking operation. It assigns the first element of the selected tuple to the variable label 
+    and the second element to the variable button. This way when a button is pressed, both of the widgets will be disabled.
+    """
+    def transfer_component(self, index_id):
+        # Each addition of a widget in the LY10 layout will increase the "size_hint" to match the layout's structure.
+        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] + 0.06)
+        self.ids.LY10.size_hint = update_size_hint()
+
+        self.component_index = index_id.my_id
+        self.component_text = self.tuple_list[self.component_index][0]
+        self.component_button = self.tuple_list[self.component_index][1]
+        self.component_text.disabled = True
+        self.component_button.disabled = True
+
+
+        self.transfered_component = Label(
+            text=self.component_text.text,
+            font_size=30)
+        self.ids.LY10.add_widget(self.transfered_component)
+
+        self.amount_text = TextInput(
+            background_active="Images/border_icon.png",
+            background_normal="Images/border_icon.png",
+            multiline=False,
+            border=(0, 0, 0, 0),
+            font_size=35,
+            padding=(10,20,0,0),
+            halign="center",
+            size_hint=(.2,.3))
+        self.ids.LY10.add_widget(self.amount_text)
+
+        self.unselect_button = Button(
+            text="X",
+            size_hint=(.2,.2))
+        self.unselect_button.my_id = self.component_index
+        self.unselect_button.bind(on_release=self.clear_component)
+        self.ids.LY10.add_widget(self.unselect_button)
+        print(f"Selected index is: {self.component_index}")
+
+
+
+        self.children_list[self.component_index] = (self.transfered_component,self.amount_text,self.unselect_button)
+
+
+
+    def clear_component(self, index_id):
+        # Each removal of a widget in the LY10 layout will decrease the "size_hint" to match the layout's structure.
+        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] - 0.06)
+        self.ids.LY10.size_hint = update_size_hint()
+
+
+        self.component_index = index_id.my_id
+        print(f"Deleted index is: {self.component_index}")
+        remove_children_0 = self.children_list[self.component_index][0]
+        remove_children_1 = self.children_list[self.component_index][1]
+        remove_children_2 = self.children_list[self.component_index][2]
+
+        self.tuple_list[self.component_index][0].disabled = False
+        self.tuple_list[self.component_index][1].disabled = False
+
+        self.ids.LY10.remove_widget(remove_children_0)
+        self.ids.LY10.remove_widget(remove_children_1)
+        self.ids.LY10.remove_widget(remove_children_2)
+
+
+
+
+
+
+
+
+
+
+    def on_leave(self, *args):
+        update_size_hint = lambda: (0.4, .02)
+        self.ids.LY10.size_hint = update_size_hint()
+        self.tuple_list.clear()
+        self.children_list.clear()
+        self.ids.LY9.clear_widgets()
+        self.ids.LY10.clear_widgets()
 class WindowManager(ScreenManager):
     pass
 
@@ -692,6 +873,7 @@ class SaniStore(App):
         sm.add_widget(MainScreen(name="Second"))
         sm.add_widget(InventoryScreen(name="Third"))
         sm.add_widget(ImportScreen(name="Fourth"))
+        sm.add_widget(ExportScreen(name="Fifth"))
         return sm
 
 

@@ -3,6 +3,7 @@
     MainScreen:
     InventoryScreen:
     ImportScreen:
+    ExportScreen:
 
 
 <WelcomeScreen>:
@@ -29,10 +30,13 @@
     BoxLayout:
         id: LY2
         orientation: "vertical"
-        padding: (0,10)
-        spacing: 10
-        pos_hint: {"center_x": .25,"center_y": .8}
-        size_hint: (.45,.25)
+        padding: (0,0)
+        spacing: 0
+        pos_hint: {"center_x": .55,"center_y": .7}
+        size_hint: (1,.3)
+    FloatLayout:
+        id: LY25
+
 
 <InventoryScreen>:
     name: "Third"
@@ -116,4 +120,54 @@
             Line:
                 width: 5
                 rectangle: self.x, self.y, self.width, self.height
+
+<ExportScreen>:
+    name: "Fifth"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "Images/export_screen.png"
+
+    FloatLayout:
+        id: LY8
+        orientation: "vertical"
+        padding: (0,0)
+        spacing: 0
+
+    ScrollView:
+        id: SW2
+        bar_width: 1
+        bar_color: (1,1,1,1)
+        do_scroll_x: False
+        do_scroll_y: True
+        scroll_type: ["content"]
+        size_hint: (.2, .65)
+        pos_hint: {"center_x": .11,"center_y": .42}
+        padding: (0,0,0,100)
+
+        GridLayout:
+            id: LY9
+            cols: 2
+            orientation: "lr-tb"
+            padding: (0,0,0,0)
+            spacing: (0,0)
+            pos_hint: {"center_x": .6,"center_y": .5}
+            size_hint: (1,None)
+            height: self.minimum_height
+
+    GridLayout:
+        id: LY10
+        cols: 3
+        orientation: "lr-tb"
+        padding: (0,0,0,0)
+        spacing: (10,10)
+        pos_hint: {"center_x": .5,"center_y": .45}
+        size_hint: (.4,.02)
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: "Images/fade_border.png"
+
 

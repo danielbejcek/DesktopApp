@@ -773,7 +773,9 @@ class ExportScreen(Screen, Transition):
 
 
 
-
+            """
+            "tuple_list" is storing our widgets, they are organized in a touples for later access.
+            """
             tuple_data = (self.component_label, self.arrow_button)
             self.tuple_list.append(tuple_data)
 
@@ -781,14 +783,11 @@ class ExportScreen(Screen, Transition):
             self.ids.LY9.add_widget(self.arrow_button)
 
     """
-    "self.component_list.items()" returns a list of tuples where each tuple contains a Label (key) and a Button (value).
-    With use of a "list(..)" we convert it into a regular list. "[index]" extracts the tuple at the specified index from the list.
-    Label, button is a tuple unpacking operation. It assigns the first element of the selected tuple to the variable label 
-    and the second element to the variable button. This way when a button is pressed, both of the widgets will be disabled.
+    
     """
     def transfer_component(self, index_id):
         # Each addition of a widget in the LY10 layout will increase the "size_hint" to match the layout's structure.
-        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] + 0.08)
+        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] + .12)
         self.ids.LY10.size_hint = update_size_hint()
 
         self.component_index = index_id.my_id
@@ -814,7 +813,7 @@ class ExportScreen(Screen, Transition):
             cursor_color=(0, 0, 0, 1),
             foreground_color=(0, 0, 0, 1),
             font_size=30,
-            padding=(20,20,0,0),
+            padding=(20,19,0,0),
             halign="center",
             size_hint=(.3,.4))
         self.ids.LY10.add_widget(self.amount_text)
@@ -823,7 +822,7 @@ class ExportScreen(Screen, Transition):
             background_normal="Images/back_arrow_icon.png",
             background_down="Images/back_arrow_icon.png",
             border=(0, 0, 0, 0),
-            size_hint=(.1,.05))
+            size_hint=(.1,.02))
         self.unselect_button.my_id = self.component_index
         self.unselect_button.bind(on_release=self.clear_component)
         self.unselect_button.bind(on_enter=self.unselect_button.on_button_hover, on_leave=self.unselect_button.on_button_hover_exit)
@@ -833,10 +832,13 @@ class ExportScreen(Screen, Transition):
         self.children_list[self.component_index] = (self.transfered_component,self.amount_text,self.unselect_button)
 
 
-
+    """
+    With "clear_component" method we are removing corresponding widgets. Each removal of a widget updates the GridLayout and decreases
+    the height attribute of size_hint by .12.
+    """
     def clear_component(self, index_id):
         # Each removal of a widget in the LY10 layout will decrease the "size_hint" to match the layout's structure.
-        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] - 0.08)
+        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] - .12)
         self.ids.LY10.size_hint = update_size_hint()
 
 

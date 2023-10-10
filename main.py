@@ -787,7 +787,7 @@ class ExportScreen(Screen, Transition):
     """
     def transfer_component(self, index_id):
         # Each addition of a widget in the LY10 layout will increase the "size_hint" to match the layout's structure.
-        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] + 0.06)
+        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] + 0.08)
         self.ids.LY10.size_hint = update_size_hint()
 
         self.component_index = index_id.my_id
@@ -808,9 +808,9 @@ class ExportScreen(Screen, Transition):
             multiline=False,
             border=(0, 0, 0, 0),
             font_size=35,
-            padding=(10,20,0,0),
+            padding=(20,15,0,0),
             halign="center",
-            size_hint=(.2,.3))
+            size_hint=(.3,.4))
         self.ids.LY10.add_widget(self.amount_text)
 
         self.unselect_button = Button(
@@ -821,15 +821,13 @@ class ExportScreen(Screen, Transition):
         self.ids.LY10.add_widget(self.unselect_button)
         print(f"Selected index is: {self.component_index}")
 
-
-
         self.children_list[self.component_index] = (self.transfered_component,self.amount_text,self.unselect_button)
 
 
 
     def clear_component(self, index_id):
         # Each removal of a widget in the LY10 layout will decrease the "size_hint" to match the layout's structure.
-        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] - 0.06)
+        update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] - 0.08)
         self.ids.LY10.size_hint = update_size_hint()
 
 

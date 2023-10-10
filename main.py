@@ -68,7 +68,8 @@ class HoverButton(Button, HoverBehavior):
                             "Images/unlocked_icon.png":"Images/lock_icon_selected.png",
                             "Images/pencil_edit.png":"Images/pencil_icon_selected.png",
                             "Images/closed_folder.png":"Images/opened_folder.png",
-                            "Images/arrow_pick.png":"Images/arrow_pick_selected.png"}
+                            "Images/arrow_pick.png":"Images/arrow_pick_selected.png",
+                            "Images/back_arrow_icon.png":"Images/back_arrow_icon_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -142,8 +143,8 @@ class MainScreen(Screen, Transition):
         self.exit_button = HoverButton(
             background_normal="Images/exit_button.png",
             background_down="Images/exit_button.png",
-            size_hint=(.06, .09),
-            pos_hint={"center_x": .93, "center_y": .09},
+            size_hint=(.07, .1),
+            pos_hint={"center_x": .94, "center_y": .09},
             border=(0, 0, 0, 0))
         self.exit_button.bind(on_enter=self.exit_button.on_button_hover, on_leave=self.exit_button.on_button_hover_exit)
         self.exit_button.bind(on_release=self.exit_app)
@@ -798,8 +799,11 @@ class ExportScreen(Screen, Transition):
 
 
         self.transfered_component = Label(
-            text=self.component_text.text,
-            font_size=30)
+            text=f"[b]{self.component_text.text}[/b]",
+            markup=True,
+            font_size=30,
+            outline_color=(0, 0, 0, 1),
+            outline_width=2)
         self.ids.LY10.add_widget(self.transfered_component)
 
         self.amount_text = TextInput(
@@ -807,17 +811,22 @@ class ExportScreen(Screen, Transition):
             background_normal="Images/border_icon.png",
             multiline=False,
             border=(0, 0, 0, 0),
-            font_size=35,
-            padding=(20,15,0,0),
+            cursor_color=(0, 0, 0, 1),
+            foreground_color=(0, 0, 0, 1),
+            font_size=30,
+            padding=(20,20,0,0),
             halign="center",
             size_hint=(.3,.4))
         self.ids.LY10.add_widget(self.amount_text)
 
-        self.unselect_button = Button(
-            text="X",
-            size_hint=(.2,.2))
+        self.unselect_button = HoverButton(
+            background_normal="Images/back_arrow_icon.png",
+            background_down="Images/back_arrow_icon.png",
+            border=(0, 0, 0, 0),
+            size_hint=(.1,.05))
         self.unselect_button.my_id = self.component_index
         self.unselect_button.bind(on_release=self.clear_component)
+        self.unselect_button.bind(on_enter=self.unselect_button.on_button_hover, on_leave=self.unselect_button.on_button_hover_exit)
         self.ids.LY10.add_widget(self.unselect_button)
         print(f"Selected index is: {self.component_index}")
 
@@ -852,9 +861,11 @@ class ExportScreen(Screen, Transition):
 
 
 
-
+    """
+    Reseting widget's properties back to their original values and clearing them from the layout.
+    """
     def on_leave(self, *args):
-        update_size_hint = lambda: (0.4, .02)
+        update_size_hint = lambda: (0.4, 0)
         self.ids.LY10.size_hint = update_size_hint()
         self.tuple_list.clear()
         self.children_list.clear()

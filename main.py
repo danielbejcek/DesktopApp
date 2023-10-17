@@ -69,7 +69,10 @@ class HoverButton(Button, HoverBehavior):
                             "Images/pencil_edit.png":"Images/pencil_icon_selected.png",
                             "Images/closed_folder.png":"Images/opened_folder.png",
                             "Images/arrow_pick.png":"Images/arrow_pick_selected.png",
-                            "Images/back_arrow_icon.png":"Images/back_arrow_icon_selected.png"}
+                            "Images/back_arrow_icon.png":"Images/back_arrow_icon_selected.png",
+                            "Images/expand_arrow.png":"Images/expand_arrow_selected.png",
+                            "Images/closed_box.png":"Images/closed_box_selected.png",
+                            "Images/return_box.png":"Images/return_box_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -110,10 +113,9 @@ class MainScreen(Screen, Transition):
         self.inventory_button = HoverButton(
             background_normal="Images/inventory_text.png",
             background_down="Images/inventory_text.png",
-            font_size=15,
-            size_hint=(.2, .04),
+            pos_hint={"center_x": .2, "center_y": .9},
+            size_hint=(.28, .1),
             border=(0, 0, 0, 0))
-
         self.ids.LY2.add_widget(self.inventory_button)
         self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
         # In order for a transition to work, we need to combine this on_release event with lambda.
@@ -123,8 +125,8 @@ class MainScreen(Screen, Transition):
         self.import_button = HoverButton(
             background_normal="Images/import_text.png",
             background_down="Images/import_text.png",
-            font_size=15,
-            size_hint=(.2, .04),
+            size_hint=(.28, .1),
+            pos_hint={"center_x": .154,"center_y": .8},
             border=(0, 0, 0, 0))
         self.ids.LY2.add_widget(self.import_button)
         self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
@@ -133,8 +135,8 @@ class MainScreen(Screen, Transition):
         self.export_button = HoverButton(
             background_normal="Images/export_text.png",
             background_down="Images/export_text.png",
-            font_size=30,
-            size_hint=(.2, .04),
+            pos_hint={"center_x": .162, "center_y": .7},
+            size_hint=(.28, .1),
             border=(0, 0, 0, 0))
         self.export_button.bind(on_enter=self.export_button.on_button_hover, on_leave=self.export_button.on_button_hover_exit)
         self.export_button.bind(on_release=lambda x: self.transition("Fifth"))
@@ -143,12 +145,12 @@ class MainScreen(Screen, Transition):
         self.exit_button = HoverButton(
             background_normal="Images/exit_button.png",
             background_down="Images/exit_button.png",
-            size_hint=(.07, .1),
+            size_hint=(.06, .095),
             pos_hint={"center_x": .94, "center_y": .09},
             border=(0, 0, 0, 0))
         self.exit_button.bind(on_enter=self.exit_button.on_button_hover, on_leave=self.exit_button.on_button_hover_exit)
         self.exit_button.bind(on_release=self.exit_app)
-        self.ids.LY25.add_widget(self.exit_button)
+        self.ids.LY2.add_widget(self.exit_button)
     def exit_app(self, instance):
         App.get_running_app().stop()
 class InventoryScreen(Screen, Transition):
@@ -421,6 +423,7 @@ class InventoryScreen(Screen, Transition):
                         multiline=False,
                         border=(0, 0, 0, 0),
                         halign="right",
+                        input_filter="int",
                         font_size=30,
                         cursor_color=(0, 0, 0, 1),
                         foreground_color=(0, 0, 0, 1),
@@ -619,14 +622,16 @@ class ImportScreen(Screen, Transition, DropField):
         # self.drop_field = DropField(size_hint=(1, None))
         # self.drop_field.bind(on_dropfile=self.on_file_drop)
         # self.ids.LY6.add_widget(self.drop_field)
-
+        # size_hint = (.06, .095),
+        #
+        # pos_hint = {"center_x": .94, "center_y": .09})
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
             background_down="Images/home_button_icon.png",
-            size_hint=(.065, .1),
+            size_hint = (.06, .095),
             border=(0, 0, 0, 0),
-            pos_hint={"center_x": .94, "top_y": .94})
+            pos_hint = {"center_x": .94, "center_y": .09})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
         self.ids.LY6.add_widget(self.home_button)
@@ -702,9 +707,6 @@ class ImportScreen(Screen, Transition, DropField):
                 bold=True)
             self.ids.LY65.add_widget(self.imported_amount)
 
-            # self.correspnding_amount = Label
-
-
             for divider in range(2):
                 self.divider_line = Image(
                     source="Images/divider_3.png",
@@ -733,6 +735,7 @@ class ExportScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(ExportScreen, self).__init__(**kwargs)
         self.df = pd.read_csv("Components_data.csv")
+        self.data_store = False
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
@@ -742,51 +745,68 @@ class ExportScreen(Screen, Transition):
             pos_hint={"center_x": .94, "center_y": .09})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
+        self.home_button.bind(on_release=lambda button: (setattr(self,"data_store",False)))
         self.ids.LY8.add_widget(self.home_button)
 
-        # Setting "size_hint" of LY10 layout explicitly so we can modify its values in python code.
-        # self.ids.LY10.size_hint = (.4,.06)
+        self.next_page = HoverButton(
+            background_normal="Images/closed_box.png",
+            background_down="Images/closed_box.png",
+            size_hint=(.07, .125),
+            border=(0, 0, 0, 0),
+            pos_hint={"center_x": .94, "center_y": .9})
+        self.ids.LY8.add_widget(self.next_page)
+        self.next_page.bind(on_enter=self.next_page.on_button_hover, on_leave=self.next_page.on_button_hover_exit)
+        self.next_page.bind(on_release=lambda page: self.transition("Sixth"))
+        self.next_page.bind(on_release=lambda button: (setattr(self,"data_store", True)))
 
-    def on_pre_enter(self, *args):
-        self.tuple_list = []
-        self.children_list = []
-
-        for placeholder in range(38):
-            x = "x"
-            self.children_list.append(x)
-
-        for index, component in enumerate(self.df["Komponent"]):
-            self.component_label = Label(
-                text=component,
-                font_size=20,
-                size_hint=(1,None))
-
-            self.arrow_button = HoverButton(
-                background_normal="Images/arrow_pick.png",
-                background_down="Images/arrow_pick.png",
-                background_disabled_normal="Images/arrow_pick_disabled.png",
-                size_hint=(.2, .05),
-                border=(0, 0, 0, 0))
-            self.arrow_button.my_id = index
-            self.arrow_button.bind(on_enter=self.arrow_button.on_button_hover,on_leave=self.arrow_button.on_button_hover_exit)
-            self.arrow_button.bind(on_release=self.transfer_component)
 
 
 
-            """
-            "tuple_list" is storing our widgets, they are organized in a touples for later access.
-            """
-            tuple_data = (self.component_label, self.arrow_button)
-            self.tuple_list.append(tuple_data)
+    def on_pre_enter(self, *args):
 
-            self.ids.LY9.add_widget(self.component_label)
-            self.ids.LY9.add_widget(self.arrow_button)
+
+        if not self.data_store:
+            self.transfered_dict = {}
+            self.tuple_list = []
+            self.children_list = ["x" for placeholder in range(38)]
+            for index, component in enumerate(self.df["Komponent"]):
+                self.component_label = Label(
+                    text=component,
+                    font_size=25,
+                    size_hint=(1,None),
+                    outline_color=(0, 0, 0, 1),
+                    outline_width=2)
+
+
+                self.arrow_button = HoverButton(
+                    background_normal="Images/arrow_pick.png",
+                    background_down="Images/arrow_pick.png",
+                    background_disabled_normal="Images/arrow_pick_disabled.png",
+                    size_hint=(.2, .05),
+                    border=(0, 0, 0, 0))
+                self.arrow_button.my_id = index
+                self.arrow_button.bind(on_enter=self.arrow_button.on_button_hover,on_leave=self.arrow_button.on_button_hover_exit)
+                self.arrow_button.bind(on_release=self.transfer_component)
+
+
+
+                """'tuple_list' is storing our widgets and they are organized in a touples for later access."""
+                tuple_data = (self.component_label, self.arrow_button)
+                self.tuple_list.append(tuple_data)
+
+
+                self.ids.LY9.add_widget(self.component_label)
+                self.ids.LY9.add_widget(self.arrow_button)
+        else:
+            pass
 
     """
-    
+    Each press of a "arrow_button" will now generate 3 new widgets and corresponding "component_label", "arrow_button" will become disabled.
+    All of the widgets are related to each other with the use of "component_index". We are using the "children_list" which is filled with appropriate amount
+    of placeholders to maintain the correct number of indicies.
     """
     def transfer_component(self, index_id):
-        # Each addition of a widget in the LY10 layout will increase the "size_hint" to match the layout's structure.
+        """Each addition of a widget in the LY10 layout will increase the "size_hint" to match the layout's structure."""
         update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] + .12)
         self.ids.LY10.size_hint = update_size_hint()
 
@@ -798,24 +818,33 @@ class ExportScreen(Screen, Transition):
 
 
         self.transfered_component = Label(
-            text=f"[b]{self.component_text.text}[/b]",
+            text=self.component_text.text,
             markup=True,
             font_size=30,
             outline_color=(0, 0, 0, 1),
             outline_width=2)
         self.ids.LY10.add_widget(self.transfered_component)
 
+        """
+        Insted of using on_text_validate, usage of 'focus' function allows us to store the widgets 
+        in 'self.transfered_dict' without the need to press enter on every instance. Simply clicking out of 
+        focus of the text input field will perform equally.
+        """
         self.amount_text = TextInput(
-            background_active="Images/border_icon.png",
-            background_normal="Images/border_icon.png",
+            background_active="Images/border_icon_2.png",
+            background_normal="Images/border_icon_2.png",
             multiline=False,
+            input_filter="int",
             border=(0, 0, 0, 0),
             cursor_color=(0, 0, 0, 1),
             foreground_color=(0, 0, 0, 1),
             font_size=30,
-            padding=(20,19,0,0),
+            padding=(20,18,0,0),
             halign="center",
-            size_hint=(.3,.4))
+            size_hint=(.3,.4),)
+            # on_text_validate=(self.text_input_validate))
+        self.amount_text.bind(focus=self.text_input_validate)
+        self.amount_text.my_id = self.component_index
         self.ids.LY10.add_widget(self.amount_text)
 
         self.unselect_button = HoverButton(
@@ -829,6 +858,7 @@ class ExportScreen(Screen, Transition):
         self.ids.LY10.add_widget(self.unselect_button)
         print(f"Selected index is: {self.component_index}")
 
+        """Each placeholder in "children_list" at the specified index is being replaced with tuple consisting of (component, text, button)."""
         self.children_list[self.component_index] = (self.transfered_component,self.amount_text,self.unselect_button)
 
 
@@ -837,17 +867,18 @@ class ExportScreen(Screen, Transition):
     the height attribute of size_hint by .12.
     """
     def clear_component(self, index_id):
-        # Each removal of a widget in the LY10 layout will decrease the "size_hint" to match the layout's structure.
+        """Each removal of a widget in the LY10 layout will decrease the "size_hint" to match the layout's structure."""
         update_size_hint = lambda: (0.4, self.ids.LY10.size_hint[1] - .12)
         self.ids.LY10.size_hint = update_size_hint()
-
-
         self.component_index = index_id.my_id
         print(f"Deleted index is: {self.component_index}")
+
+        """In order to remove widgets correctly, we need find the correct index in the "children_list first and only then unpack the tuple."""
         remove_children_0 = self.children_list[self.component_index][0]
         remove_children_1 = self.children_list[self.component_index][1]
         remove_children_2 = self.children_list[self.component_index][2]
 
+        """We set the disable property of a "arrow_button" and "component_label" back to False so they can available again for use."""
         self.tuple_list[self.component_index][0].disabled = False
         self.tuple_list[self.component_index][1].disabled = False
 
@@ -855,24 +886,76 @@ class ExportScreen(Screen, Transition):
         self.ids.LY10.remove_widget(remove_children_1)
         self.ids.LY10.remove_widget(remove_children_2)
 
+        """
+        Condition that checks if 'component_name' is in 'self.transfered_dict'. 
+        If true, component will be removed from the dictionary along with the corresponding value.
+        """
+        if self.children_list[self.component_index][0].text in self.transfered_dict:
+            self.transfered_dict.pop(self.children_list[self.component_index][0].text)
+
+        print(self.transfered_dict)
+
+        """
+        Method that validates the text_field input. After text_input recieves a valid value, component aswell as the value are transfered
+        into a 'transfered_dict' as a component (key) and amount as (value). Once value from text_input field is removed, the corresponding key
+        in a dictionary is also removed. Value paramater controls the focus of the text input field, once focus is lost (press of a 'enter' button or mouse click out of the boundary of the text_input field)
+        '.update' function is fired.
+        """
+    def text_input_validate(self, index_id, value):
+        self.component_index = index_id.my_id
+        component_name = self.children_list[self.component_index][0].text
+        component_amount = self.children_list[self.component_index][1].text
+
+        if not value:
+            self.transfered_dict.update({component_name:component_amount})
+            if self.transfered_dict[component_name] == "":
+                self.transfered_dict.pop(component_name)
 
 
-
-
-
-
-
+        print(self.transfered_dict)
 
     """
-    Reseting widget's properties back to their original values and clearing them from the layout.
+    Reseting widget's properties back to their original values including the layout's size_hint and clearing them from the layout.
     """
     def on_leave(self, *args):
-        update_size_hint = lambda: (0.4, 0)
-        self.ids.LY10.size_hint = update_size_hint()
-        self.tuple_list.clear()
-        self.children_list.clear()
-        self.ids.LY9.clear_widgets()
-        self.ids.LY10.clear_widgets()
+        if not self.data_store:
+            update_size_hint = lambda: (0.4, 0)
+            self.ids.LY10.size_hint = update_size_hint()
+            self.tuple_list.clear()
+            self.children_list.clear()
+            self.transfered_dict.clear()
+            self.ids.LY9.clear_widgets()
+            self.ids.LY10.clear_widgets()
+        else:
+            pass
+
+class FinalExportScreen(Screen, Transition):
+    def __init__(self, **kwargs):
+        super(FinalExportScreen, self).__init__(**kwargs)
+
+        # self.data_store = True
+
+        self.home_button = HoverButton(
+            background_normal="Images/home_button_icon.png",
+            background_down="Images/home_button_icon.png",
+            size_hint=(.06, .095),
+            border=(0, 0, 0, 0),
+            pos_hint={"center_x": .94, "center_y": .09})
+        self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
+        self.home_button.bind(on_release=self.home_page)
+        self.ids.LY11.add_widget(self.home_button)
+
+        self.previous_page = HoverButton(
+            background_normal="Images/return_box.png",
+            background_down="Images/return_box.png",
+            size_hint=(.07, .125),
+            border=(0, 0, 0, 0),
+            pos_hint={"center_x": .07, "center_y": .9})
+        self.ids.LY11.add_widget(self.previous_page)
+        self.previous_page.bind(on_enter=self.previous_page.on_button_hover, on_leave=self.previous_page.on_button_hover_exit)
+        self.previous_page.bind(on_release=lambda page: self.transition("Fifth"))
+
+
 class WindowManager(ScreenManager):
     pass
 
@@ -885,6 +968,7 @@ class SaniStore(App):
         sm.add_widget(InventoryScreen(name="Third"))
         sm.add_widget(ImportScreen(name="Fourth"))
         sm.add_widget(ExportScreen(name="Fifth"))
+        sm.add_widget(FinalExportScreen(name="Sixth"))
         return sm
 
 

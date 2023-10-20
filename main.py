@@ -1,6 +1,7 @@
 import kivy
 import pandas as pd
 import tabula
+from fpdf import FPDF
 from kivy.config import Config
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen, WipeTransition
@@ -11,6 +12,7 @@ from kivy.uix.image import Image
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.graphics import Rectangle
+from kivy.graphics import Line
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
@@ -72,7 +74,8 @@ class HoverButton(Button, HoverBehavior):
                             "Images/back_arrow_icon.png":"Images/back_arrow_icon_selected.png",
                             "Images/expand_arrow.png":"Images/expand_arrow_selected.png",
                             "Images/closed_box.png":"Images/closed_box_selected.png",
-                            "Images/return_box.png":"Images/return_box_selected.png"}
+                            "Images/return_box.png":"Images/return_box_selected.png",
+                            "Images/ship_box.png":"Images/ship_box_selected.png"}
 
     # "on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
     # In this case it's looking for a background_normal within the "inventory_button" widget. Once it finds a equal string,
@@ -731,11 +734,18 @@ class ImportScreen(Screen, Transition, DropField):
 
 
 class ExportScreen(Screen, Transition):
-
+    """
+    'data_store' is a variable that helps us control the data when screens are being switched.
+    When set to 'False', all of the data generated with button widgets will be deleted when we leave the ExportScreen.
+    When set to 'True', relevant data for the user will be kept in order to access them when the user decides to
+    go back to the ExportScreen to modify his selection.
+    """
+    data_store = False
     def __init__(self, **kwargs):
         super(ExportScreen, self).__init__(**kwargs)
+
         self.df = pd.read_csv("Components_data.csv")
-        self.data_store = False
+        self.transfered_dict = {}
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
@@ -745,7 +755,7 @@ class ExportScreen(Screen, Transition):
             pos_hint={"center_x": .94, "center_y": .09})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
-        self.home_button.bind(on_release=lambda button: (setattr(self,"data_store",False)))
+        self.home_button.bind(on_release=lambda button: (setattr(ExportScreen,"data_store",False)))
         self.ids.LY8.add_widget(self.home_button)
 
         self.next_page = HoverButton(
@@ -757,16 +767,13 @@ class ExportScreen(Screen, Transition):
         self.ids.LY8.add_widget(self.next_page)
         self.next_page.bind(on_enter=self.next_page.on_button_hover, on_leave=self.next_page.on_button_hover_exit)
         self.next_page.bind(on_release=lambda page: self.transition("Sixth"))
-        self.next_page.bind(on_release=lambda button: (setattr(self,"data_store", True)))
-
-
+        self.next_page.bind(on_release=lambda button: (setattr(ExportScreen,"data_store", True)))
+        self.next_page.bind(on_press=lambda dict: FinalExportScreen().recieve_dictionary(self.transfered_dict))
+        self.next_page.bind(on_press=self.text_lose_focus)
 
 
     def on_pre_enter(self, *args):
-
-
-        if not self.data_store:
-            self.transfered_dict = {}
+        if not ExportScreen.data_store:
             self.tuple_list = []
             self.children_list = ["x" for placeholder in range(38)]
             for index, component in enumerate(self.df["Komponent"]):
@@ -841,8 +848,8 @@ class ExportScreen(Screen, Transition):
             font_size=30,
             padding=(20,18,0,0),
             halign="center",
-            size_hint=(.3,.4),)
-            # on_text_validate=(self.text_input_validate))
+            size_hint=(.3,.4))
+
         self.amount_text.bind(focus=self.text_input_validate)
         self.amount_text.my_id = self.component_index
         self.ids.LY10.add_widget(self.amount_text)
@@ -893,32 +900,40 @@ class ExportScreen(Screen, Transition):
         if self.children_list[self.component_index][0].text in self.transfered_dict:
             self.transfered_dict.pop(self.children_list[self.component_index][0].text)
 
-        print(self.transfered_dict)
-
         """
         Method that validates the text_field input. After text_input recieves a valid value, component aswell as the value are transfered
         into a 'transfered_dict' as a component (key) and amount as (value). Once value from text_input field is removed, the corresponding key
-        in a dictionary is also removed. Value paramater controls the focus of the text input field, once focus is lost (press of a 'enter' button or mouse click out of the boundary of the text_input field)
-        '.update' function is fired.
+        in a dictionary is also removed. Value paramater controls the focus of the text input field, once focus is lost 
+        (press of a 'enter' button or mouse click outside of the boundary of the text_input field) '.update' function is fired.
         """
     def text_input_validate(self, index_id, value):
         self.component_index = index_id.my_id
         component_name = self.children_list[self.component_index][0].text
         component_amount = self.children_list[self.component_index][1].text
 
+        """Verifying that text input has some integer value, if not, key is removed from the dictionary."""
         if not value:
             self.transfered_dict.update({component_name:component_amount})
+
             if self.transfered_dict[component_name] == "":
                 self.transfered_dict.pop(component_name)
 
+    """
+    Method is fired when 'next_page' button is pressed. Meaning, when text_input is still selected (focused), this method
+    will unfocus it and allow the value from the text input to be passed into the 'transfered_dict'.
+    """
+    def text_lose_focus(self, instance):
+        if self.transfered_dict != {}:
+            self.children_list[self.component_index][1].focus = False
+        else:
+            pass
 
-        print(self.transfered_dict)
 
     """
     Reseting widget's properties back to their original values including the layout's size_hint and clearing them from the layout.
     """
     def on_leave(self, *args):
-        if not self.data_store:
+        if not ExportScreen().data_store:
             update_size_hint = lambda: (0.4, 0)
             self.ids.LY10.size_hint = update_size_hint()
             self.tuple_list.clear()
@@ -930,10 +945,11 @@ class ExportScreen(Screen, Transition):
             pass
 
 class FinalExportScreen(Screen, Transition):
+    final_component_dict = {}
     def __init__(self, **kwargs):
         super(FinalExportScreen, self).__init__(**kwargs)
 
-        # self.data_store = True
+        self.textinput_dictionary = {}
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
@@ -943,6 +959,7 @@ class FinalExportScreen(Screen, Transition):
             pos_hint={"center_x": .94, "center_y": .09})
         self.home_button.bind(on_enter=self.home_button.on_button_hover, on_leave=self.home_button.on_button_hover_exit)
         self.home_button.bind(on_release=self.home_page)
+        self.home_button.bind(on_release=lambda button: (setattr(self, "data_store", False)))
         self.ids.LY11.add_widget(self.home_button)
 
         self.previous_page = HoverButton(
@@ -954,6 +971,228 @@ class FinalExportScreen(Screen, Transition):
         self.ids.LY11.add_widget(self.previous_page)
         self.previous_page.bind(on_enter=self.previous_page.on_button_hover, on_leave=self.previous_page.on_button_hover_exit)
         self.previous_page.bind(on_release=lambda page: self.transition("Fifth"))
+
+        self.pdf_button = HoverButton(
+            background_normal="Images/ship_box.png",
+            background_down="Images/ship_box.png",
+            size_hint=(.07, .125),
+            border=(0, 0, 0, 0),
+            pos_hint={"center_x": .94, "center_y": .9})
+        self.pdf_button.bind(on_enter=self.pdf_button.on_button_hover, on_leave=self.pdf_button.on_button_hover_exit)
+        self.pdf_button.bind(on_release=self.create_pdf)
+        self.ids.LY11.add_widget(self.pdf_button)
+
+
+
+        self.name_label = Label()
+        self.name_textinput = TextInput(
+            border=(0, 0, 0, 0),
+            multiline=False,
+            cursor_color=(1, 1, 1, 1),
+            foreground_color=(1, 1, 1, 1),
+            background_color=(1, 1, 1, 0),
+            font_size=25,
+            halign="center",
+            size_hint=(.2, .04),
+            pos_hint={"center_x": .55, "center_y": .736},
+            on_text_validate=self.create_label)
+        self.ids.LY11.add_widget(self.name_textinput)
+        self.textinput_dictionary.update({self.name_textinput:self.name_label})
+
+        self.system_label = Label()
+        self.system_textinput = TextInput(
+            border=(0, 0, 0, 0),
+            multiline=False,
+            cursor_color=(1, 1, 1, 1),
+            foreground_color=(1, 1, 1, 1),
+            background_color=(1, 1, 1, 0),
+            font_size=25,
+            halign="center",
+            size_hint=(.2, .04),
+            pos_hint={"center_x": .55, "center_y": .614},
+            on_text_validate=self.create_label)
+        self.ids.LY11.add_widget(self.system_textinput)
+        self.textinput_dictionary.update({self.system_textinput:self.system_label})
+
+        self.material_label = Label()
+        self.material_textinput = TextInput(
+            border=(0, 0, 0, 0),
+            multiline=False,
+            cursor_color=(1, 1, 1, 1),
+            foreground_color=(1, 1, 1, 1),
+            background_color=(1, 1, 1, 0),
+            font_size=25,
+            halign="center",
+            size_hint=(.2, .04),
+            pos_hint={"center_x": .55, "center_y": .491},
+            on_text_validate=self.create_label)
+        self.ids.LY11.add_widget(self.material_textinput)
+        self.textinput_dictionary.update({self.material_textinput:self.material_label})
+
+        self.contract_label = Label()
+        self.contract_textinput = TextInput(
+            border=(0, 0, 0, 0),
+            multiline=False,
+            cursor_color=(1, 1, 1, 1),
+            foreground_color=(1, 1, 1, 1),
+            background_color=(1, 1, 1, 0),
+            font_size=25,
+            halign="center",
+            size_hint=(.2, .04),
+            pos_hint={"center_x": .55, "center_y": .3695},
+            on_text_validate=self.create_label)
+        self.ids.LY11.add_widget(self.contract_textinput)
+        self.textinput_dictionary.update({self.contract_textinput:self.contract_label})
+
+        self.height_label = Label()
+        self.height_textinput = TextInput(
+            border=(0, 0, 0, 0),
+            multiline=False,
+            cursor_color=(1, 1, 1, 1),
+            foreground_color=(1, 1, 1, 1),
+            background_color=(1, 1, 1, 0),
+            font_size=25,
+            halign="center",
+            size_hint=(.2, .04),
+            pos_hint={"center_x": .55, "center_y": .245},
+            on_text_validate=self.create_label)
+        self.ids.LY11.add_widget(self.height_textinput)
+        self.textinput_dictionary.update({self.height_textinput:self.height_label})
+
+        self.date_label = Label()
+        self.date_textinput = TextInput(
+            border=(0, 0, 0, 0),
+            multiline=False,
+            cursor_color=(1, 1, 1, 1),
+            foreground_color=(1, 1, 1, 1),
+            background_color=(1, 1, 1, 0),
+            font_size=25,
+            halign="center",
+            size_hint=(.2, .04),
+            pos_hint={"center_x": .55, "center_y": .12},
+            on_text_validate=self.create_label)
+        self.ids.LY11.add_widget(self.date_textinput)
+        self.textinput_dictionary.update({self.date_textinput:self.date_label})
+
+        self.ids.LY13.add_widget(self.name_label)
+        self.ids.LY13.add_widget(self.system_label)
+        self.ids.LY13.add_widget(self.material_label)
+        self.ids.LY13.add_widget(self.contract_label)
+        self.ids.LY13.add_widget(self.height_label)
+        self.ids.LY13.add_widget(self.date_label)
+
+    def create_label(self, instance):
+        label = self.textinput_dictionary[instance]
+        label.color = (0, 0, 0, 1)
+        label.text = instance.text
+
+        if instance == self.name_textinput:
+            label.font_size = 35
+            label.bold = True
+            label.pos_hint = {"center_x": .5, "center_y": .95}
+            self.pdf_name = label.text
+
+        if instance == self.system_textinput:
+            label.text = f"SYSTEM: {instance.text}"
+            label.font_size = 20
+            label.pos_hint = {"center_x": .5, "center_y": .75}
+            self.pdf_system = label.text
+
+        if instance == self.material_textinput:
+            label.underline = True
+            label.font_size = 15
+            label.pos_hint = {"center_x": .133, "center_y": .9}
+            label.text_size = (150, None)
+            label.size = label.texture_size
+            self.pdf_material = label.text
+
+        if instance == self.contract_textinput:
+            label.font_size = 20
+            label.pos_hint = {"center_x": .85, "center_y": .9}
+            self.pdf_contract = label.text
+
+        if instance == self.height_textinput:
+            label.font_size = 15
+            label.pos_hint = {"center_x": .133, "center_y": .8}
+            label.text_size = (150, None)
+            label.size = label.texture_size
+            self.pdf_height = label.text
+
+        if instance == self.date_textinput:
+            label.text = f"Date: {instance.text}"
+            label.font_size = 15
+            label.pos_hint = {"center_x": .133, "center_y": .02}
+            label.text_size = (150, None)
+            label.size = label.texture_size
+            self.pdf_date = label.text
+
+
+
+    def create_pdf(self, instance):
+        final_dict = FinalExportScreen.final_component_dict
+        width = 210
+        height = 297
+        pdf = FPDF(orientation="P", unit="mm", format="A4")
+        pdf.add_page()
+        pdf.rect(10,10,190,277)
+        pdf.image("Images/SaniLogo.png", 179, 279, 20, 7)
+
+        try:
+            pdf.set_font("helvetica", "B", 25)
+            pdf.cell(0,20, self.pdf_name,0,0, "C")
+
+            pdf.set_font("helvetica", "", 10)
+            pdf.cell(0,279, self.pdf_date,0,0, "C")
+
+            pdf.output(f"{self.pdf_name}, {self.pdf_date[6::]}.pdf")
+        except:
+            print("Could not create a PDF file, because user input has not been filled completely.")
+
+
+
+
+
+    """
+    Method that recieves a 'transfered_dict' dictionary from ExportScreen Class in order to interpret the data correctly.
+    """
+    def recieve_dictionary(self, transfered_dict):
+        FinalExportScreen.final_component_dict.update(transfered_dict)
+
+    def on_pre_enter(self, *args):
+        for item, value in self.final_component_dict.items():
+            self.pdf_component = Label(
+                text=item,
+                markup=True,
+                font_size=15,
+                padding=(0, 10, 0, 0),
+                color=(0,0,0,1))
+
+
+            self.pdf_component_amount = Label(
+                text=value,
+                markup=True,
+                font_size=15,
+                padding=(0,10,0,0),
+                color=(0, 0, 0, 1))
+
+
+            self.ids.LY12.add_widget(self.pdf_component)
+            self.ids.LY12.add_widget(self.pdf_component_amount)
+
+            for divider in range(2):
+                self.divider_line = Image(
+                    source="Images/divider.png",
+                    size_hint_y=None,
+                    height=4,
+                    width=3)
+                self.ids.LY12.add_widget(self.divider_line)
+
+
+    def on_leave(self, *args):
+        FinalExportScreen().final_component_dict.clear()
+        self.ids.LY12.clear_widgets()
+
+
 
 
 class WindowManager(ScreenManager):

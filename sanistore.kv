@@ -179,6 +179,30 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: "Images/export_screen_2.png"
+            source: "Images/final_export_screen.png"
     FloatLayout:
         id: LY11
+
+    GridLayout:
+        id: LY12
+        cols: 2
+        orientation: "lr-tb"
+        pos_hint: {"center_x": .192,"center_y": .35}
+        size_hint: (.3,.5)
+        canvas.before:
+            Color:
+                rgba: 0,0,0,1
+            Line:
+                width: 2
+                rectangle: self.x, self.y, self.width, self.height
+
+    FloatLayout:
+        id: LY13
+        size_hint: (.37,.79)
+        pos_hint: {"center_x": .195,"center_y": .415}
+        canvas.before:
+            Color:
+                rgba: 0,1,0,0
+            Line:
+                width: 2
+                rectangle: self.x, self.y, self.width, self.height

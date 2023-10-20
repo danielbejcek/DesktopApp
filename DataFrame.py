@@ -1,10 +1,10 @@
-import pandas as pd
-
-pd.options.display.width= None
-pd.options.display.max_columns= None
-pd.set_option('display.max_rows', 50)
-pd.set_option('display.max_columns', 50)
-
+# import pandas as pd
+#
+# pd.options.display.width= None
+# pd.options.display.max_columns= None
+# pd.set_option('display.max_rows', 50)
+# pd.set_option('display.max_columns', 50)
+#
 
 # components = {"Komponent":
 #                 ["NOHA ALU 25",
@@ -87,3 +87,5 @@ pd.set_option('display.max_columns', 50)
 #                  0]}
 
 
+x = "DATE: 22.08.2022"
+print(x[6::])

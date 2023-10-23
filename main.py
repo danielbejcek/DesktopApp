@@ -106,7 +106,7 @@ class WelcomeScreen(Screen, Transition):
         fade_in_image = Animation(opacity=1, duration=1)
         fade_in_image.start(self.logo_image)
         # In order for this function to perform as inteded, lambda needs to be used here.
-        Clock.schedule_once(lambda dt: self.transition("Second"), 2)
+        Clock.schedule_once(lambda dt: self.transition("Second"), 1)
 
 
 
@@ -1119,12 +1119,12 @@ class FinalExportScreen(Screen, Transition):
             self.pdf_height = label.text
 
         if instance == self.date_textinput:
-            label.text = f"Date: {instance.text}"
+            label.text = f"DATUM: {instance.text}"
             label.font_size = 15
             label.pos_hint = {"center_x": .133, "center_y": .02}
             label.text_size = (150, None)
             label.size = label.texture_size
-            self.pdf_date = label.text
+            self.pdf_date = str(label.text)
 
 
 
@@ -1134,19 +1134,91 @@ class FinalExportScreen(Screen, Transition):
         height = 297
         pdf = FPDF(orientation="P", unit="mm", format="A4")
         pdf.add_page()
+        pdf.add_font("Arial Unicode MS Regular", style="", fname="arialuni.ttf", uni=True)
         pdf.rect(10,10,190,277)
+        pdf.set_margins(10, 0, 10)
+        pdf.set_auto_page_break(False)
         pdf.image("Images/SaniLogo.png", 179, 279, 20, 7)
 
-        try:
-            pdf.set_font("helvetica", "B", 25)
-            pdf.cell(0,20, self.pdf_name,0,0, "C")
+        # Name
+        pdf.set_font("Arial Unicode MS Regular", "", 25)
+        pdf.cell(0,40, self.pdf_name,0,1, "C")
 
-            pdf.set_font("helvetica", "", 10)
-            pdf.cell(0,279, self.pdf_date,0,0, "C")
+        # System
+        pdf.set_font("Arial Unicode MS Regular", "", 15)
+        pdf.set_xy(0, 85)
+        pdf.cell(0, 0, self.pdf_system, 0, 0, "C")
 
-            pdf.output(f"{self.pdf_name}, {self.pdf_date[6::]}.pdf")
-        except:
-            print("Could not create a PDF file, because user input has not been filled completely.")
+        # Material
+        pdf.set_font("Arial Unicode MS Regular", "U", 20)
+        pdf.set_xy(10, 40)
+        pdf.cell(0, 0, self.pdf_material, 0, 0, "L")
+
+        # Contract
+        pdf.set_font("Arial Unicode MS Regular", "", 20)
+        pdf.set_xy(170, 40)
+        pdf.cell(0, 0, self.pdf_contract, 0, 0, "L")
+
+        # Height
+        pdf.set_font("Arial Unicode MS Regular", "", 10)
+        pdf.set_xy(10, 60)
+        pdf.cell(0, 0, self.pdf_height, 0, 0, "L")
+
+        # Date
+        pdf.set_font("Arial Unicode MS Regular", "", 10)
+        pdf.set_y(285)
+        pdf.cell(0,0, self.pdf_date,0,2, "L")
+
+        # Table
+        y = 90
+        y2 = 90
+        pdf.set_auto_page_break(True)
+
+        """
+        Two different conditions to for a better interpretation of the table
+        Once the amount of dictionary items is greater then 12, PDF table is divided into two columns
+        to keep all of the components in one page.
+        """
+        if final_dict != {} and len(final_dict) <= 12:
+            for index, (key, value) in enumerate(final_dict.items()):
+                pdf.set_font("Arial Unicode MS Regular", "", 13)
+                pdf.set_xy(50, y)
+                pdf.multi_cell(80, 15, key, 1)
+
+                pdf.set_font("Arial Unicode MS Regular", "", 15)
+                pdf.set_xy(130, y)
+                pdf.multi_cell(30, 15, str(value), 1, "C")
+                y += 15
+
+        elif final_dict != {} and len(final_dict) >= 13:
+            for index, (key, value) in enumerate(final_dict.items()):
+                if index < 10:
+                    pdf.set_font("Arial Unicode MS Regular", "", 13)
+                    pdf.set_xy(10, y)
+                    pdf.multi_cell(80, 15, key, 1)
+
+                    pdf.set_font("Arial Unicode MS Regular", "", 15)
+                    pdf.set_xy(90, y)
+                    pdf.multi_cell(20, 15, str(value), 1, "C")
+                    y += 15
+
+                elif index > 10:
+                    pdf.set_font("Arial Unicode MS Regular", "", 13)
+                    pdf.set_xy(110, y2)
+                    pdf.multi_cell(70, 15, key, 1)
+
+                    pdf.set_font("Arial Unicode MS Regular", "", 15)
+                    pdf.set_xy(180, y2)
+                    pdf.multi_cell(20, 15, str(value), 1, "C")
+                    y2 += 15
+
+
+
+
+
+        pdf.output(f"{self.pdf_name}, {self.pdf_date[7::]}.pdf")
+
+
 
 
 

@@ -1,6 +1,7 @@
 import kivy
 import pandas as pd
 import tabula
+import os
 from fpdf import FPDF
 from kivy.config import Config
 from kivy.app import App
@@ -21,10 +22,12 @@ from kivy.core.window import Window
 from kivy.properties import NumericProperty
 from kivy.properties import StringProperty
 from kivy.event import EventDispatcher
+from kivy.animation import Animation
 from HoverButton import HoverBehavior
 from kivy.uix.textinput import TextInput
 from DropField import *
 from plyer import filechooser
+
 
 
 
@@ -218,8 +221,20 @@ class InventoryScreen(Screen, Transition):
             instance.background_down = "Images/lock_icon.png"
             self.add_widgets(self.ids.LY4)
 
+            self.df = pd.read_csv("Components_data.csv")
+
+            """ 
+            'final_count' list is filled with 0 for each component in the dataframe.
+            Changes made to the component's amount are stored here and every component is under a corresponding index.
+            When user is finished with the changes by 'locking' the interface, 'save_data' method is fired, which updates
+            the original .csv database. Upon every return to 'unlocked' interface, new 'final_count' list with zero values is instantiated.
+            """
+            self.final_count = [0 for _ in self.df["Množství"]]
+
+
         # Widgets are locked.
         if instance.background_normal == "Images/lock_icon_selected.png":
+            self.save_data(self.final_count)
             self.ids.LY4.clear_widgets()
             self.notebook_button.disabled = False
             instance.background_normal = "Images/lock_icon.png"
@@ -232,17 +247,7 @@ class InventoryScreen(Screen, Transition):
     we will use a "on_leave" function that clears all of the widgets to prevent the widgets from overlapping.
     """
     def on_pre_enter(self, *args):
-        """
-        Empty list in wich we store all the numerical values from our CSV database.
-        This list later servers as a merge between the values that are to be changed in the database.
-        """
-        self.final_count = []
-
         self.df = pd.read_csv("Components_data.csv")
-        print(self.df)
-        for csv_amount in (self.df["Množství"]):
-            self.final_count.append(csv_amount)
-        print(self.final_count)
         self.add_widgets(self.ids.LY4)
 
     """
@@ -290,13 +295,6 @@ class InventoryScreen(Screen, Transition):
         if self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_closed.png":
             if self.lock_button.background_normal == "Images/lock_icon.png":
                 self.lock_button.disabled = False
-
-
-                """
-                Updates the .csv file with modified values. Whenever user has finished making changes in the unlocked interface,
-                proceeds to click the lock icon button, only then the changes in the database are saved.
-                """
-                self.save_data(self.final_count)
 
                 """ We created an empty list for later use."""
                 self.new_amount_list = []
@@ -527,8 +525,8 @@ class InventoryScreen(Screen, Transition):
                         iteration_count = 0
 
     """
-    Method that allows us to change values of a "new_amount" Label. It's directly connected to the database and it's being updated real-time.
-    Each widget has its index as a 'Primary key' to help us navigate between the iterations and control which component's value we want to change.
+    Method that allows us to change values of a "new_amount" Label. Each widget has its index as a 'Primary key',
+    to help us navigate between the iterations and control which component's value we want to change.
     We are directly accessing an item in the "new_amount_list" which has been appended from the "new_amount" Label.
     With the use of "index" variable we are able to connect the specific item in the list to a widget created by the loop.
     Change of values in the "self.new_amount.text" Label is done by modifying the list items, not by accessing the "self.new_amount" widget directly.
@@ -537,16 +535,18 @@ class InventoryScreen(Screen, Transition):
         index_plus = index_id.my_id
         value = "plus"
         self.new_amount_list[index_plus].text = str(int(self.new_amount_list[index_plus].text) + 1)
+        self.final_count[index_plus] += 1
         self.set_label_color(index_plus)
-        self.count_values(index_plus, value)
+        print(self.final_count)
 
 
     def decrement_value(self, index_id):
         index_minus = index_id.my_id
         value = "minus"
         self.new_amount_list[index_minus].text = str(int(self.new_amount_list[index_minus].text) - 1)
+        self.final_count[index_minus] -= 1
         self.set_label_color(index_minus)
-        self.count_values(index_minus, value)
+        print(self.final_count)
 
     """Method that allows us to display and immediately focus a new text input field."""
     def button_to_text(self, index_id):
@@ -554,31 +554,35 @@ class InventoryScreen(Screen, Transition):
         self.text_inputs_list[button_index].disabled = False
         self.text_inputs_list[button_index].opacity = 1
         self.text_inputs_list[button_index].focused = True
+        self.text_inputs_list[button_index].text = ""
+
     """
     After pressing enter, while text input widget is active, this method will transfer the value into the "new_amount" widget.
     To maintain proper functionality, if the "new_amount" value has not yet been modified (value = 0), new value will now be now added.
-    Although if user decides to correct his previous value, the "new_amount" will be reset and equal to the original value.
+    Although if user decides to correct his previous value, the "new_amount" will be reset and equal to zero.
     """
     def custom_text_validate(self, index_id):
         value = "custom"
         self.text_index = index_id.my_id
+        self.final_count[self.text_index] = 0
         self.text_inputs_list[self.text_index].disabled = True
         self.text_inputs_list[self.text_index].focused = False
         self.text_inputs_list[self.text_index].opacity = 0
+        self.user_amount = self.text_inputs_list[self.text_index].text
+        print(f"User amount: {self.user_amount}")
 
-        self.user_amount = int(self.text_inputs_list[self.text_index].text)
-        if self.new_amount_list[self.text_index].text == str(0):
-            self.new_amount_list[self.text_index].text = str(self.user_amount)
-        elif self.new_amount_list[self.text_index].text != str(0):
-            self.new_amount_list[self.text_index].text = str(self.user_amount)
-            self.final_count[self.text_index] = self.df.at[self.text_index, "Množství"]
+        self.new_amount_list[self.text_index].text = str(self.user_amount)
+        if self.text_inputs_list[self.text_index].text == "":
+            self.user_amount = 0
+
         self.set_label_color(self.text_index)
         self.count_values(self.text_index, value)
+
 
     """
     To prevent the user to make changes in the database while still 'unlocked interface', we created an empty list "self.final_count".
     We want all the changes to the database occur only after we exit from the unlocked interface and enter into a locked interface (by clicking the lock_icon).
-    Instead of making changes directly to the core database, we appended all of the component amounts into "self.final_count" list and make changes there.
+    Instead of making changes directly to the core database, we modify values inside the "self.final_count".
     Once user clicks a "plus_sign", "minus_sign" or "text_input_button", the list's components are updated on a corresponding index.
     """
     def count_values(self, index, value):
@@ -589,7 +593,8 @@ class InventoryScreen(Screen, Transition):
             self.final_count[index] -= 1
 
         elif value == "custom":
-            self.final_count[index] += self.user_amount
+            self.final_count[index] += int(self.user_amount)
+            print(self.final_count)
 
 
 
@@ -599,8 +604,6 @@ class InventoryScreen(Screen, Transition):
         if not value:
             self.text_inputs_list[index].disabled = True
             self.text_inputs_list[index].opacity = 0
-
-
 
     """
     Method that checks for the amount of components. As soon as value falls bellow 0, the color of the value turns red.
@@ -621,7 +624,7 @@ class InventoryScreen(Screen, Transition):
     """
     def save_data(self, final_count):
         for index, amount in enumerate(self.df["Množství"]):
-            self.df.at[index, "Množství"] = self.final_count[index]
+            self.df.at[index, "Množství"] += self.final_count[index]
 
 
         self.df.to_csv("Components_data.csv", index=False)
@@ -642,22 +645,12 @@ class InventoryScreen(Screen, Transition):
 
 class ImportScreen(Screen, Transition, DropField):
     # opacity_value = NumericProperty(0)
-    source_image_1 = StringProperty("Images/importscreen_edit_2.png")
+    source_image_1 = StringProperty("Images/importscreen_edit.png")
 
 
 
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)
-
-        # data_file = "Components_data.csv"
-        # self.base_df = pd.read_csv(data_file)
-
-        # self.drop_field = DropField(size_hint=(1, None))
-        # self.drop_field.bind(on_dropfile=self.on_file_drop)
-        # self.ids.LY6.add_widget(self.drop_field)
-        # size_hint = (.06, .095),
-        #
-        # pos_hint = {"center_x": .94, "center_y": .09})
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
@@ -677,7 +670,6 @@ class ImportScreen(Screen, Transition, DropField):
             pos_hint={"center_x": .24, "center_y": .4})
         self.open_file_button.bind(on_release=self.choose_file)
         self.open_file_button.bind(on_enter=self.open_file_button.on_button_hover, on_leave=self.open_file_button.on_button_hover_exit)
-
         self.ids.LY6.add_widget(self.open_file_button)
 
         self.result_image = Image(
@@ -695,7 +687,7 @@ class ImportScreen(Screen, Transition, DropField):
         if self.path:
 
             self.open_file_button.opacity = 0
-            self.source_image_1 = "Images/importscreen_edit_2_blurred.png"
+            # self.source_image_1 = "Images/importscreen_edit_2_blurred.png"
             # self.opacity_value = 1
             self.ids.LY65.clear_widgets()
             self.create_table(self.path)
@@ -708,59 +700,47 @@ class ImportScreen(Screen, Transition, DropField):
     Method that pulls data from imported .pdf file and selects the first index from the list. 
     Argument needs to be passed as a string (self.path[0]) not a list.
     """
-    def create_table(self, pdf_file):
-        tables = tabula.read_pdf(str(pdf_file[0]), pages="all")
-        user_df = pd.concat(tables)
-
-        col_component = user_df.columns[0]
-        col_amount = user_df.columns[1]
-        component = user_df[col_component]
-        amount = user_df[col_amount]
-        data_frame = {"Component": component, "Amount": amount}
-        print(data_frame["Component"])
-        print(self.base_df["Komponent"])
-        # corresponding_component = []
-        # if data_frame["Component"] in self.base_df["Komponent"]:
-        #     corresponding_component.append(self.base_df["Amount"])
-        # print(corresponding_component)
-
-
-        for index, (component, amount) in enumerate(zip(data_frame["Component"], data_frame["Amount"])):
-            self.imported_component = Label(
-                text=component,
-                font_size=20,
-                color=(1, 1, 1, 1),
-                bold=False)
-            self.ids.LY65.add_widget(self.imported_component)
-
-            self.imported_amount = Label(
-                text=str(amount),
-                font_size=20,
-                color=(1,1,1,1),
-                bold=True)
-            self.ids.LY65.add_widget(self.imported_amount)
-
-            for divider in range(2):
-                self.divider_line = Image(
-                    source="Images/divider_3.png",
-                    size_hint_y=None,
-                    height=10,
-                    width=5)
-                self.ids.LY65.add_widget(self.divider_line)
-
+    # def create_table(self, pdf_file):
+    #     tables = tabula.read_pdf(str(pdf_file[0]), pages="all")
+    #     user_df = pd.concat(tables)
+    #
+    #     col_component = user_df.columns[0]
+    #     col_amount = user_df.columns[1]
+    #     component = user_df[col_component]
+    #     amount = user_df[col_amount]
+    #     data_frame = {"Component": component, "Amount": amount}
+    #
+    #
+    #
+    #     for index, (component, amount) in enumerate(zip(data_frame["Component"], data_frame["Amount"])):
+    #         self.imported_component = Label(
+    #             text=component,
+    #             font_size=20,
+    #             color=(1, 1, 1, 1),
+    #             bold=False)
+    #         self.ids.LY65.add_widget(self.imported_component)
+    #
+    #         self.imported_amount = Label(
+    #             text=str(amount),
+    #             font_size=20,
+    #             color=(1,1,1,1),
+    #             bold=True)
+    #         self.ids.LY65.add_widget(self.imported_amount)
+    #
+    #         for divider in range(2):
+    #             self.divider_line = Image(
+    #                 source="Images/divider_3.png",
+    #                 size_hint_y=None,
+    #                 height=10,
+    #                 width=5)
+    #             self.ids.LY65.add_widget(self.divider_line)
+    #
 
     def on_leave(self, *args):
         self.ids.LY65.clear_widgets()
         self.opacity_value = 0
 
 
-
-
-
-    # def on_file_drop(self, instance, touch):
-    #     file_path = touch.profile.get("file_path", "")
-    #     if file_path:
-    #         print("I have been deployed")
 
 
 class ExportScreen(Screen, Transition):
@@ -941,12 +921,36 @@ class ExportScreen(Screen, Transition):
         component_name = self.children_list[self.component_index][0].text
         component_amount = self.children_list[self.component_index][1].text
 
-        """Verifying that text input has some integer value, if not, key is removed from the dictionary."""
+        """
+        Verifying that text input has some integer value, if not, key is removed from the dictionary.
+        We also verify that integer value is positive only, once negative value is registered, error message is displayed
+        and he key is once again removed from the dictionary.
+        """
+
         if not value:
             self.transfered_dict.update({component_name:component_amount})
 
             if self.transfered_dict[component_name] == "":
                 self.transfered_dict.pop(component_name)
+
+            elif component_amount < str(0):
+                self.transfered_dict.pop(component_name)
+
+                self.error_img = Image(
+                    source="Images/error_number.png",
+                    allow_stretch=True,
+                    pos_hint={"center_x": .68, "center_y": .88},
+                    size_hint=(.2, .2),
+                    opacity=0)
+                self.ids.LY8.add_widget(self.error_img)
+
+                self.anim = Animation(opacity=1, duration=.1, transition="in_cubic")
+                self.anim.start(self.error_img)
+                Clock.schedule_once(self.cancel_anim, 1.5)
+
+    def cancel_anim(self, dt):
+        self.anim = Animation(opacity=0, duration=2, transition="in_back")
+        self.anim.start(self.error_img)
 
     """
     Method is fired when 'next_page' button is pressed. Meaning, when text_input is still selected (focused), this method
@@ -1010,6 +1014,7 @@ class FinalExportScreen(Screen, Transition):
             pos_hint={"center_x": .94, "center_y": .9})
         self.pdf_button.bind(on_enter=self.pdf_button.on_button_hover, on_leave=self.pdf_button.on_button_hover_exit)
         self.pdf_button.bind(on_release=self.create_pdf)
+        self.pdf_button.bind(on_release=self.animation)
         self.ids.LY11.add_widget(self.pdf_button)
 
 
@@ -1191,8 +1196,8 @@ class FinalExportScreen(Screen, Transition):
 
         # Contract
         pdf.set_font("Arial Unicode MS Regular", "", 20)
-        pdf.set_xy(170, 40)
-        pdf.cell(0, 0, self.contract_label.text, 0, 0, "L")
+        pdf.set_xy(160, 40)
+        pdf.multi_cell(30, 10, self.contract_label.text,1, "L")
 
         # Height
         pdf.set_font("Arial Unicode MS Regular", "", 10)
@@ -1249,7 +1254,7 @@ class FinalExportScreen(Screen, Transition):
         else:
             pass
 
-        pdf.output(f"{self.name_label.text}, {self.date_label.text[7::]}.pdf")
+        pdf.output("PDF Component folder/" + f"{self.name_label.text}, {self.date_label.text[7::]}.pdf")
 
 
         """
@@ -1271,7 +1276,24 @@ class FinalExportScreen(Screen, Transition):
         merge_df.to_csv("Components_data.csv", index=False)
 
 
+    def animation(self, instance):
+        self.export_img = Image(
+            source="Images/export_successful.png",
+            allow_stretch=True,
+            pos_hint={"center_x": .85, "center_y": .6},
+            size_hint=(.3,.3),
+            opacity=0)
+        self.ids.LY11.add_widget(self.export_img)
 
+        self.anim = Animation(opacity=1, duration=.2, transition="in_cubic")
+        self.anim.start(self.export_img)
+        Clock.schedule_once(self.cancel_anim,3)
+
+
+
+    def cancel_anim(self, dt):
+        self.anim = Animation(opacity=0, duration=2, transition="in_back")
+        self.anim.start(self.export_img)
 
 
 

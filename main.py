@@ -2,7 +2,9 @@ import kivy
 import pandas as pd
 import tabula
 import os
+import functools
 from fpdf import FPDF
+from PyPDF2 import PdfMerger
 from kivy.config import Config
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen, WipeTransition
@@ -21,11 +23,11 @@ from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
 from kivy.properties import NumericProperty
 from kivy.properties import StringProperty
+from kivy.properties import BooleanProperty
 from kivy.event import EventDispatcher
 from kivy.animation import Animation
 from HoverButton import HoverBehavior
 from kivy.uix.textinput import TextInput
-from DropField import *
 from plyer import filechooser
 
 
@@ -80,7 +82,10 @@ class HoverButton(Button, HoverBehavior):
                             "Images/expand_arrow.png":"Images/expand_arrow_selected.png",
                             "Images/closed_box.png":"Images/closed_box_selected.png",
                             "Images/return_box.png":"Images/return_box_selected.png",
-                            "Images/ship_box.png":"Images/ship_box_selected.png"}
+                            "Images/ship_box.png":"Images/ship_box_selected.png",
+                            "Images/select_pdf_button.png":"Images/select_pdf_button_selected.png",
+                            "Images/select_component_button.png":"Images/select_component_button_selected.png",
+                            "Images/pdf_merge_icon.png":"Images/pdf_merge_icon_selected.png"}
 
     """
     on_button_hover" method loops trough the 'images_path' dictionary and looks for a element that is equal to a instance attribute.
@@ -115,7 +120,7 @@ class WelcomeScreen(Screen, Transition):
         fade_in_image = Animation(opacity=1, duration=1)
         fade_in_image.start(self.logo_image)
         # In order for this function to perform as inteded, lambda needs to be used here.
-        Clock.schedule_once(lambda dt: self.transition("Second"), 1)
+        Clock.schedule_once(lambda dt: self.transition("Second"), 4)
 
 
 
@@ -128,21 +133,10 @@ class MainScreen(Screen, Transition):
             pos_hint={"center_x": .2, "center_y": .9},
             size_hint=(.28, .1),
             border=(0, 0, 0, 0))
-        self.ids.LY2.add_widget(self.inventory_button)
         self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
         # In order for a transition to work, we need to combine this on_release event with lambda.
-        self.inventory_button.bind(on_release=lambda x: self.transition("Third"))
-
-
-        self.import_button = HoverButton(
-            background_normal="Images/import_text.png",
-            background_down="Images/import_text.png",
-            size_hint=(.28, .1),
-            pos_hint={"center_x": .154,"center_y": .8},
-            border=(0, 0, 0, 0))
-        self.ids.LY2.add_widget(self.import_button)
-        self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
-        self.import_button.bind(on_release=lambda x: self.transition("Fourth"))
+        self.inventory_button.bind(on_release=lambda screen: self.transition("Third"))
+        self.ids.LY2.add_widget(self.inventory_button)
 
         self.export_button = HoverButton(
             background_normal="Images/export_text.png",
@@ -151,8 +145,18 @@ class MainScreen(Screen, Transition):
             size_hint=(.28, .1),
             border=(0, 0, 0, 0))
         self.export_button.bind(on_enter=self.export_button.on_button_hover, on_leave=self.export_button.on_button_hover_exit)
-        self.export_button.bind(on_release=lambda x: self.transition("Fifth"))
+        self.export_button.bind(on_release=lambda screen: self.transition("Fifth"))
         self.ids.LY2.add_widget(self.export_button)
+
+        self.import_button = HoverButton(
+            background_normal="Images/import_text.png",
+            background_down="Images/import_text.png",
+            size_hint=(.28, .1),
+            pos_hint={"center_x": .154,"center_y": .8},
+            border=(0, 0, 0, 0))
+        self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
+        self.import_button.bind(on_release=lambda screen: self.transition("Fourth"))
+        self.ids.LY2.add_widget(self.import_button)
 
         self.exit_button = HoverButton(
             background_normal="Images/exit_button.png",
@@ -163,6 +167,7 @@ class MainScreen(Screen, Transition):
         self.exit_button.bind(on_enter=self.exit_button.on_button_hover, on_leave=self.exit_button.on_button_hover_exit)
         self.exit_button.bind(on_release=self.exit_app)
         self.ids.LY2.add_widget(self.exit_button)
+
     def exit_app(self, instance):
         App.get_running_app().stop()
 class InventoryScreen(Screen, Transition):
@@ -534,19 +539,23 @@ class InventoryScreen(Screen, Transition):
     def increment_value(self, index_id):
         index_plus = index_id.my_id
         value = "plus"
+        if self.new_amount_list[index_plus].text == "":
+            self.new_amount_list[index_plus].text = str(0)
         self.new_amount_list[index_plus].text = str(int(self.new_amount_list[index_plus].text) + 1)
         self.final_count[index_plus] += 1
         self.set_label_color(index_plus)
-        print(self.final_count)
+
 
 
     def decrement_value(self, index_id):
         index_minus = index_id.my_id
         value = "minus"
+        if self.new_amount_list[index_minus].text == "":
+            self.new_amount_list[index_minus].text = str(0)
         self.new_amount_list[index_minus].text = str(int(self.new_amount_list[index_minus].text) - 1)
         self.final_count[index_minus] -= 1
         self.set_label_color(index_minus)
-        print(self.final_count)
+
 
     """Method that allows us to display and immediately focus a new text input field."""
     def button_to_text(self, index_id):
@@ -569,7 +578,6 @@ class InventoryScreen(Screen, Transition):
         self.text_inputs_list[self.text_index].focused = False
         self.text_inputs_list[self.text_index].opacity = 0
         self.user_amount = self.text_inputs_list[self.text_index].text
-        print(f"User amount: {self.user_amount}")
 
         self.new_amount_list[self.text_index].text = str(self.user_amount)
         if self.text_inputs_list[self.text_index].text == "":
@@ -594,7 +602,6 @@ class InventoryScreen(Screen, Transition):
 
         elif value == "custom":
             self.final_count[index] += int(self.user_amount)
-            print(self.final_count)
 
 
 
@@ -625,11 +632,7 @@ class InventoryScreen(Screen, Transition):
     def save_data(self, final_count):
         for index, amount in enumerate(self.df["Množství"]):
             self.df.at[index, "Množství"] += self.final_count[index]
-
-
         self.df.to_csv("Components_data.csv", index=False)
-
-
 
     """ Function that cleans the page of all the widgets, allowing us to return to the page without overlapping widgets."""
     def on_leave(self, *args):
@@ -643,11 +646,9 @@ class InventoryScreen(Screen, Transition):
         self.notebook_button.disabled = False
 
 
-class ImportScreen(Screen, Transition, DropField):
-    # opacity_value = NumericProperty(0)
-    source_image_1 = StringProperty("Images/importscreen_edit.png")
-
-
+class ImportScreen(Screen, Transition):
+    pdf_file_text = StringProperty("")
+    component_file_text = StringProperty("")
 
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)
@@ -662,86 +663,119 @@ class ImportScreen(Screen, Transition, DropField):
         self.home_button.bind(on_release=self.home_page)
         self.ids.LY6.add_widget(self.home_button)
 
-        self.open_file_button = HoverButton(
-            background_normal="Images/closed_folder.png",
-            background_down="Images/closed_folder.png",
-            size_hint=(.1,.15),
+        self.select_pdf = HoverButton(
+            background_normal="Images/select_pdf_button.png",
+            background_down="Images/select_pdf_button.png",
             border=(0, 0, 0, 0),
-            pos_hint={"center_x": .24, "center_y": .4})
-        self.open_file_button.bind(on_release=self.choose_file)
-        self.open_file_button.bind(on_enter=self.open_file_button.on_button_hover, on_leave=self.open_file_button.on_button_hover_exit)
-        self.ids.LY6.add_widget(self.open_file_button)
+            size_hint=(1,.1),
+            pos_hint={"center_x": .55, "center_y": .75})
+        self.select_pdf.bind(on_enter=self.select_pdf.on_button_hover, on_leave=self.select_pdf.on_button_hover_exit)
+        self.select_pdf.bind(on_release=self.choose_pdf_file)
+        self.ids.LY6.add_widget(self.select_pdf)
 
-        self.result_image = Image(
-            source="Images/border_black_edit.png",
+        self.select_component = HoverButton(
+            background_normal="Images/select_component_button.png",
+            background_down="Images/select_component_button.png",
+            border=(0, 0, 0, 0),
+            size_hint=(1, .1),
+            pos_hint={"center_x": .55, "center_y": .65})
+        self.select_component.bind(on_enter=self.select_component.on_button_hover, on_leave=self.select_component.on_button_hover_exit)
+        self.select_component.bind(on_release=self.choose_component_file)
+        self.ids.LY6.add_widget(self.select_component)
+
+        self.merge_pdf = HoverButton(
+            background_normal="Images/pdf_merge_icon.png",
+            background_down="Images/pdf_merge_icon_down.png",
+            background_disabled_normal="Images/pdf_merge_icon_disabled.png",
+            border=(0, 0, 0, 0),
+            disabled=True,
+            size_hint=(.06, .09),
+            pos_hint={"center_x": .94, "center_y": .9})
+        self.merge_pdf.bind(on_enter=self.merge_pdf.on_button_hover, on_leave=self.merge_pdf.on_button_hover_exit)
+        self.merge_pdf.bind(on_release=self.merge_pdf_files)
+        self.ids.LY6.add_widget(self.merge_pdf)
+
+        self.merge_img = Image(
+            source="Images/merge_success_img.png",
             allow_stretch=True,
-            pos_hint={"center_x": .5, "center_y": .5})
+            pos_hint={"center_x": .85, "center_y": .6},
+            size_hint=(.3, .3),
+            opacity=0)
+        self.ids.LY6.add_widget(self.merge_img)
 
 
     """
-    Method that pops up a Windows browser, from which user can select a file to work with.
-    If user selects a new .pdf file, previous widget will be cleared to prevent overlapping.
+    Two methods bellow allow us to choose .pdf files that will later be merged together. 
+    Once user selects a .pdf file, lambda function is fired to call a "handle_selection" method. 
+    Within the lambda function, two arguments are passed: "selection" and "method".
+    "Selection" is the selected file, while "method" keyword is the deciding argument.
+    Thanks to the "method" keyword, we are able to differentiate which of the two methods called "handle_selection". 
     """
-    def choose_file(self, instance):
-        self.path = filechooser.open_file(title="Select a file ...", filters=[("PDF Files", "*.pdf")])
-        if self.path:
+    def choose_pdf_file(self, instance):
+        self.pdf_path = filechooser.open_file(
+            title="Select a file ...",
+            filters=[("PDF Files", "*.pdf")],
+            on_selection=lambda selection: self.handle_selection(selection, method="pdf"))
 
-            self.open_file_button.opacity = 0
-            # self.source_image_1 = "Images/importscreen_edit_2_blurred.png"
-            # self.opacity_value = 1
-            self.ids.LY65.clear_widgets()
-            self.create_table(self.path)
-            self.ids.LYimage.add_widget(self.result_image)
-        elif self.path == None:
-            print("No file selected")
+        self.anim = Animation(opacity=1, duration=1, transition="in_cubic")
+        self.anim.start(self.ids.merge_docs)
 
+    def choose_component_file(self, instance):
+        self.component_path = filechooser.open_file(
+            title="Select a file ...",
+            filters=[("PDF Files", "*.pdf")],
+            on_selection=lambda selection: self.handle_selection(selection, method="component"))
 
     """
-    Method that pulls data from imported .pdf file and selects the first index from the list. 
-    Argument needs to be passed as a string (self.path[0]) not a list.
+    After "handle_selection" method is called, it recieves an keyword argument called "method".
+    Based on the recieved keyword arguments from the two methods above, it differentiates between the IF conditions and
+    transfers the "self.file_name" into the StringProperty accordingly. Allowing the Label to appear with the correct
+    selected file's name.
     """
-    # def create_table(self, pdf_file):
-    #     tables = tabula.read_pdf(str(pdf_file[0]), pages="all")
-    #     user_df = pd.concat(tables)
-    #
-    #     col_component = user_df.columns[0]
-    #     col_amount = user_df.columns[1]
-    #     component = user_df[col_component]
-    #     amount = user_df[col_amount]
-    #     data_frame = {"Component": component, "Amount": amount}
-    #
-    #
-    #
-    #     for index, (component, amount) in enumerate(zip(data_frame["Component"], data_frame["Amount"])):
-    #         self.imported_component = Label(
-    #             text=component,
-    #             font_size=20,
-    #             color=(1, 1, 1, 1),
-    #             bold=False)
-    #         self.ids.LY65.add_widget(self.imported_component)
-    #
-    #         self.imported_amount = Label(
-    #             text=str(amount),
-    #             font_size=20,
-    #             color=(1,1,1,1),
-    #             bold=True)
-    #         self.ids.LY65.add_widget(self.imported_amount)
-    #
-    #         for divider in range(2):
-    #             self.divider_line = Image(
-    #                 source="Images/divider_3.png",
-    #                 size_hint_y=None,
-    #                 height=10,
-    #                 width=5)
-    #             self.ids.LY65.add_widget(self.divider_line)
-    #
+    def handle_selection(self, selection, method):
+        if selection:
+            self.file_name = os.path.basename(selection[0])
+
+            if method == "pdf":
+                self.pdf_file_text = self.file_name
+
+            if method == "component":
+                self.component_file_text = self.file_name
+
+            if self.pdf_file_text != "" and self.component_file_text != "":
+                self.merge_pdf.disabled = False
+
+    def merge_pdf_files(self, instance):
+        pdf_path = self.pdf_path
+        component_path = self.component_path
+
+        merger = PdfMerger()
+        pdf_files = [pdf_path[0], component_path[0]]
+
+        for pdf in pdf_files:
+            merger.append(pdf)
+
+        user_home = os.path.expanduser("~")
+        desktop_path = os.path.join(user_home, "Desktop")
+        output_pdf_path = os.path.join(desktop_path, f"Kompletní - {self.pdf_file_text}")
+        merger.write(output_pdf_path)
+        merger.close()
+        self.anim = Animation(opacity=1, duration=.2, transition="in_cubic")
+        self.anim.start(self.merge_img)
+        Clock.schedule_once(self.cancel_anim, 3)
+
+    def cancel_anim(self, dt):
+        self.anim = Animation(opacity=0, duration=2, transition="in_back")
+        self.anim.start(self.merge_img)
 
     def on_leave(self, *args):
-        self.ids.LY65.clear_widgets()
-        self.opacity_value = 0
-
-
-
+        self.pdf_file_text = ""
+        self.component_file_text = ""
+        self.merge_pdf.disabled = True
+        self.pdf_check = False
+        self.component_check = False
+        self.anim = Animation(opacity=0, duration=0, transition="in_cubic")
+        self.anim.start(self.ids.merge_docs)
 
 class ExportScreen(Screen, Transition):
     """
@@ -781,7 +815,6 @@ class ExportScreen(Screen, Transition):
         self.next_page.bind(on_press=lambda dict: FinalExportScreen().recieve_dictionary(self.transfered_dict))
         self.next_page.bind(on_press=self.text_lose_focus)
 
-
     def on_pre_enter(self, *args):
         if not ExportScreen.data_store:
             self.tuple_list = []
@@ -805,12 +838,9 @@ class ExportScreen(Screen, Transition):
                 self.arrow_button.bind(on_enter=self.arrow_button.on_button_hover,on_leave=self.arrow_button.on_button_hover_exit)
                 self.arrow_button.bind(on_release=self.transfer_component)
 
-
-
                 """'tuple_list' is storing our widgets and they are organized in a touples for later access."""
                 tuple_data = (self.component_label, self.arrow_button)
                 self.tuple_list.append(tuple_data)
-
 
                 self.ids.LY9.add_widget(self.component_label)
                 self.ids.LY9.add_widget(self.arrow_button)
@@ -832,7 +862,6 @@ class ExportScreen(Screen, Transition):
         self.component_button = self.tuple_list[self.component_index][1]
         self.component_text.disabled = True
         self.component_button.disabled = True
-
 
         self.transfered_component = Label(
             text=self.component_text.text,
@@ -859,7 +888,6 @@ class ExportScreen(Screen, Transition):
             padding=(20,18,0,0),
             halign="center",
             size_hint=(.3,.4))
-
         self.amount_text.bind(focus=self.text_input_validate)
         self.amount_text.my_id = self.component_index
         self.ids.LY10.add_widget(self.amount_text)
@@ -1130,12 +1158,10 @@ class FinalExportScreen(Screen, Transition):
             label.bold = True
             label.pos_hint = {"center_x": .5, "center_y": .95}
 
-
         if instance == self.system_textinput:
             label.text = f"SYSTEM: {instance.text}"
             label.font_size = 20
             label.pos_hint = {"center_x": .5, "center_y": .75}
-
 
         if instance == self.material_textinput:
             label.underline = True
@@ -1144,11 +1170,9 @@ class FinalExportScreen(Screen, Transition):
             label.text_size = (150, None)
             label.size = label.texture_size
 
-
         if instance == self.contract_textinput:
             label.font_size = 20
             label.pos_hint = {"center_x": .85, "center_y": .9}
-
 
         if instance == self.height_textinput:
             label.font_size = 15
@@ -1156,16 +1180,12 @@ class FinalExportScreen(Screen, Transition):
             label.text_size = (150, None)
             label.size = label.texture_size
 
-
         if instance == self.date_textinput:
             label.text = f"DATUM: {instance.text}"
             label.font_size = 15
             label.pos_hint = {"center_x": .133, "center_y": .02}
             label.text_size = (150, None)
             label.size = label.texture_size
-
-
-
 
     def create_pdf(self, instance):
         final_dictionary = FinalExportScreen.final_component_dict
@@ -1289,14 +1309,9 @@ class FinalExportScreen(Screen, Transition):
         self.anim.start(self.export_img)
         Clock.schedule_once(self.cancel_anim,3)
 
-
-
     def cancel_anim(self, dt):
         self.anim = Animation(opacity=0, duration=2, transition="in_back")
         self.anim.start(self.export_img)
-
-
-
 
     """
     Method that recieves 'transfered_dict' dictionary from ExportScreen Class in order to interpret the data correctly.
@@ -1313,15 +1328,12 @@ class FinalExportScreen(Screen, Transition):
                 padding=(0, 10, 0, 0),
                 color=(0,0,0,1))
 
-
             self.pdf_component_amount = Label(
                 text=value,
                 markup=True,
                 font_size=15,
                 padding=(0,10,0,0),
                 color=(0, 0, 0, 1))
-
-
             self.ids.LY12.add_widget(self.pdf_component)
             self.ids.LY12.add_widget(self.pdf_component_amount)
 
@@ -1333,17 +1345,12 @@ class FinalExportScreen(Screen, Transition):
                     width=3)
                 self.ids.LY12.add_widget(self.divider_line)
 
-
     def on_leave(self, *args):
         FinalExportScreen().final_component_dict.clear()
         self.ids.LY12.clear_widgets()
 
-
-
-
 class WindowManager(ScreenManager):
     pass
-
 
 class SaniStore(App):
     def build(self):

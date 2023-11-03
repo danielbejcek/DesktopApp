@@ -31,8 +31,6 @@
     FloatLayout:
         id: LY2
         size_hint: (1,1)
-    FloatLayout:
-        id: LY25
 
 
 <InventoryScreen>:
@@ -81,12 +79,10 @@
 <ImportScreen>:
     name: "Fourth"
     canvas.before:
-        Color:
-            rgba: 1, 1, 1, 1
         Rectangle:
             pos: self.pos
             size: self.size
-            source: root.source_image_1
+            source: "Images/importscreen_edit_2.png"
 
 
 
@@ -98,6 +94,29 @@
 
     FloatLayout:
         id: LY6
+        Label:
+            id: pdf_text
+            text: root.pdf_file_text
+            size_hint: (.2, .2)
+            font_size: 30
+            pos_hint: {"center_x": .29, "center_y": .4}
+
+        Image:
+            id: merge_docs
+            source: "Images/merge_documents.png"
+            size_hint: (.1,.1)
+            opacity: 0
+            pos_hint:{"center_x": .29, "center_y": .3}
+
+
+        Label:
+            id: component_text
+            text: root.component_file_text
+            size_hint: (.2, .2)
+            font_size: 30
+            pos_hint:{"center_x": .29, "center_y": .2}
+
+
 
         GridLayout:
             id: LY65

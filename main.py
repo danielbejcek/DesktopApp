@@ -32,9 +32,6 @@ from plyer import filechooser
 
 
 
-
-
-
 """
 Class that allows transitions between screens.
 Using this we are preventing creating redundant switch screen methods within each class.
@@ -120,7 +117,7 @@ class WelcomeScreen(Screen, Transition):
         fade_in_image = Animation(opacity=1, duration=1)
         fade_in_image.start(self.logo_image)
         # In order for this function to perform as inteded, lambda needs to be used here.
-        Clock.schedule_once(lambda dt: self.transition("Second"), 4)
+        Clock.schedule_once(lambda dt: self.transition("Second"), 1)
 
 
 
@@ -136,27 +133,25 @@ class MainScreen(Screen, Transition):
         self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
         # In order for a transition to work, we need to combine this on_release event with lambda.
         self.inventory_button.bind(on_release=lambda screen: self.transition("Third"))
-        self.ids.LY2.add_widget(self.inventory_button)
+
 
         self.export_button = HoverButton(
             background_normal="Images/export_text.png",
             background_down="Images/export_text.png",
-            pos_hint={"center_x": .162, "center_y": .7},
+            pos_hint={"center_x": .162, "center_y": .8},
             size_hint=(.28, .1),
             border=(0, 0, 0, 0))
         self.export_button.bind(on_enter=self.export_button.on_button_hover, on_leave=self.export_button.on_button_hover_exit)
         self.export_button.bind(on_release=lambda screen: self.transition("Fifth"))
-        self.ids.LY2.add_widget(self.export_button)
 
         self.import_button = HoverButton(
             background_normal="Images/import_text.png",
             background_down="Images/import_text.png",
             size_hint=(.28, .1),
-            pos_hint={"center_x": .154,"center_y": .8},
+            pos_hint={"center_x": .154, "center_y": .7},
             border=(0, 0, 0, 0))
         self.import_button.bind(on_enter=self.import_button.on_button_hover, on_leave=self.import_button.on_button_hover_exit)
         self.import_button.bind(on_release=lambda screen: self.transition("Fourth"))
-        self.ids.LY2.add_widget(self.import_button)
 
         self.exit_button = HoverButton(
             background_normal="Images/exit_button.png",
@@ -166,10 +161,16 @@ class MainScreen(Screen, Transition):
             border=(0, 0, 0, 0))
         self.exit_button.bind(on_enter=self.exit_button.on_button_hover, on_leave=self.exit_button.on_button_hover_exit)
         self.exit_button.bind(on_release=self.exit_app)
+
+
+        self.ids.LY2.add_widget(self.inventory_button)
+        self.ids.LY2.add_widget(self.export_button)
+        self.ids.LY2.add_widget(self.import_button)
         self.ids.LY2.add_widget(self.exit_button)
 
     def exit_app(self, instance):
         App.get_running_app().stop()
+
 class InventoryScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(InventoryScreen, self).__init__(**kwargs)
@@ -308,7 +309,7 @@ class InventoryScreen(Screen, Transition):
 
                     self.component_label= Label(
                         text=component,
-                        font_size=25,
+                        font_size=20,
                         padding=(100,0,0,0),
                         bold=False)
 
@@ -375,7 +376,7 @@ class InventoryScreen(Screen, Transition):
 
                     self.component_label_2 = Label(
                         text=component,
-                        font_size=25,
+                        font_size=20,
                         padding=(175, 0, 0, 0),
                         bold=False)
 
@@ -499,7 +500,7 @@ class InventoryScreen(Screen, Transition):
                 self.component_label= Label(
                     text=component,
                     size_hint=(.8,1),
-                    font_size=18)
+                    font_size=15)
 
                 self.amount_input_3 = Label(
                     text=str(amount),
@@ -818,11 +819,12 @@ class ExportScreen(Screen, Transition):
     def on_pre_enter(self, *args):
         if not ExportScreen.data_store:
             self.tuple_list = []
-            self.children_list = ["x" for placeholder in range(38)]
+            """Placeholder list for items in Components_data.csv"""
+            self.children_list = ["x" for placeholder in range(37)]
             for index, component in enumerate(self.df["Komponent"]):
                 self.component_label = Label(
                     text=component,
-                    font_size=25,
+                    font_size=22,
                     size_hint=(1,None),
                     outline_color=(0, 0, 0, 1),
                     outline_width=2)
@@ -866,7 +868,7 @@ class ExportScreen(Screen, Transition):
         self.transfered_component = Label(
             text=self.component_text.text,
             markup=True,
-            font_size=30,
+            font_size=25,
             outline_color=(0, 0, 0, 1),
             outline_width=2)
         self.ids.LY10.add_widget(self.transfered_component)
@@ -1242,18 +1244,18 @@ class FinalExportScreen(Screen, Transition):
         if final_dictionary != {} and len(final_dictionary) <= 12:
             for index, (key, value) in enumerate(final_dictionary.items()):
                 pdf.set_font("Arial Unicode MS Regular", "", 13)
-                pdf.set_xy(50, y)
-                pdf.multi_cell(80, 15, key, 1)
+                pdf.set_xy(40, y)
+                pdf.multi_cell(100, 15, key, 1)
 
                 pdf.set_font("Arial Unicode MS Regular", "", 15)
-                pdf.set_xy(130, y)
+                pdf.set_xy(140, y)
                 pdf.multi_cell(30, 15, str(value), 1, "C")
                 y += 15
 
         elif final_dictionary != {} and len(final_dictionary) >= 13:
             for index, (key, value) in enumerate(final_dictionary.items()):
-                if index < 10:
-                    pdf.set_font("Arial Unicode MS Regular", "", 13)
+                if index <= 9:
+                    pdf.set_font("Arial Unicode MS Regular", "", 11)
                     pdf.set_xy(10, y)
                     pdf.multi_cell(80, 15, key, 1)
 
@@ -1262,8 +1264,8 @@ class FinalExportScreen(Screen, Transition):
                     pdf.multi_cell(20, 15, str(value), 1, "C")
                     y += 15
 
-                elif index > 10:
-                    pdf.set_font("Arial Unicode MS Regular", "", 13)
+                elif index >= 9:
+                    pdf.set_font("Arial Unicode MS Regular", "", 11)
                     pdf.set_xy(110, y2)
                     pdf.multi_cell(70, 15, key, 1)
 
@@ -1361,6 +1363,7 @@ class SaniStore(App):
         sm.add_widget(ImportScreen(name="Fourth"))
         sm.add_widget(ExportScreen(name="Fifth"))
         sm.add_widget(FinalExportScreen(name="Sixth"))
+        self.icon = "Images/SaniStore_logo.png"
         return sm
 
 

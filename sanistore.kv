@@ -2,10 +2,9 @@
     WelcomeScreen:
     MainScreen:
     InventoryScreen:
-    ImportScreen:
     ExportScreen:
+    ImportScreen:
     FinalExportScreen:
-
 
 <WelcomeScreen>:
     name: "First"
@@ -30,8 +29,6 @@
             source: "Images/Menu.jpg"
     FloatLayout:
         id: LY2
-        size_hint: (1,1)
-
 
 <InventoryScreen>:
     name: "Third"
@@ -40,13 +37,12 @@
             pos: self.pos
             size: self.size
             source: "Images/inventory_screen_2.png"
+
     FloatLayout:
         id: LY3
         orientation: "vertical"
         padding: (0,0)
         spacing: 0
-
-
 
     ScrollView:
         id: SW1
@@ -75,7 +71,6 @@
         pos_hint: {"center_x": .25,"center_y": .5}
         size_hint: (.45,.8)
 
-
 <ImportScreen>:
     name: "Fourth"
     canvas.before:
@@ -83,9 +78,6 @@
             pos: self.pos
             size: self.size
             source: "Images/importscreen_edit_2.png"
-
-
-
 
     FloatLayout:
         id: LYimage
@@ -115,8 +107,6 @@
             size_hint: (.2, .2)
             font_size: 30
             pos_hint:{"center_x": .29, "center_y": .2}
-
-
 
         GridLayout:
             id: LY65

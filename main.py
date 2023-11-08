@@ -120,12 +120,10 @@ class WelcomeScreen(Screen, Transition):
             opacity=0,
             pos_hint={"center_x": .5, "center_y": 1})
         self.ids.LY1.add_widget(self.logo_image)
-        fade_in_image = Animation(opacity=1, duration=1)
+        fade_in_image = Animation(opacity=1, duration=1.5)
         fade_in_image.start(self.logo_image)
         # In order for this function to perform as inteded, lambda needs to be used here.
-        Clock.schedule_once(lambda dt: self.transition("Second"), 1)
-
-
+        Clock.schedule_once(lambda dt: self.transition("Second"), 4)
 
 class MainScreen(Screen, Transition):
     def __init__(self, **kwargs):
@@ -139,7 +137,6 @@ class MainScreen(Screen, Transition):
         self.inventory_button.bind(on_enter=self.inventory_button.on_button_hover, on_leave=self.inventory_button.on_button_hover_exit)
         # In order for a transition to work, we need to combine this on_release event with lambda.
         self.inventory_button.bind(on_release=lambda screen: self.transition("Third"))
-
 
         self.export_button = HoverButton(
             background_normal="Images/export_text.png",
@@ -167,7 +164,6 @@ class MainScreen(Screen, Transition):
             border=(0, 0, 0, 0))
         self.exit_button.bind(on_enter=self.exit_button.on_button_hover, on_leave=self.exit_button.on_button_hover_exit)
         self.exit_button.bind(on_release=self.exit_app)
-
 
         self.ids.LY2.add_widget(self.inventory_button)
         self.ids.LY2.add_widget(self.export_button)
@@ -243,7 +239,6 @@ class InventoryScreen(Screen, Transition):
             """
             self.final_count = [0 for _ in self.df["Množství"]]
 
-
         # Widgets are locked.
         if instance.background_normal == "Images/lock_icon_selected.png":
             self.save_data(self.final_count)
@@ -286,8 +281,6 @@ class InventoryScreen(Screen, Transition):
             instance.background_down="Images/notebook_closed.png"
             self.ids.LY5.clear_widgets()
             self.on_pre_enter()
-
-
 
     """
     Method that creates widgets depending on the current layout. We switch between "notebook_opened" and "notebook_closed".
@@ -416,7 +409,6 @@ class InventoryScreen(Screen, Transition):
                     self.plus_sign_2.bind(on_enter=self.plus_sign_2.on_button_hover, on_leave=self.plus_sign_2.on_button_hover_exit)
                     self.plus_sign_2.my_id = index
 
-
                     """
                     "new_amount" Label is a widget that the user can modify according to his needs with the use of "plus_sign_2", "minus_sign_2" and "value_input_button" buttons.
                     Each iteration of this Label is then added to a list to help us connect it with corresponding components.
@@ -491,9 +483,6 @@ class InventoryScreen(Screen, Transition):
                         if iteration_count > 6:
                             self.divider_line_2.opacity = (0)
 
-
-
-
             """
             In the second condition, we create a database into 4 columns to present a general overview of the warehouse stock.
             We are also setting the "lock_button.disabled" to True. Meaning once we are in this overview, we are not able to modify the values.
@@ -501,12 +490,12 @@ class InventoryScreen(Screen, Transition):
         elif self.notebook_button.background_normal and self.notebook_button.background_down == "Images/notebook_opened.png":
             self.lock_button.disabled = True
             iteration_count = 0
-
+            """ Interface is in a notebook overview. """
             for component, amount in zip(self.df["Komponent"], self.df["Množství"]):
                 self.component_label= Label(
                     text=component,
                     size_hint=(.8,1),
-                    font_size=15)
+                    font_size=17)
 
                 self.amount_input_3 = Label(
                     text=str(amount),
@@ -552,8 +541,6 @@ class InventoryScreen(Screen, Transition):
         self.final_count[index_plus] += 1
         self.set_label_color(index_plus)
 
-
-
     def decrement_value(self, index_id):
         index_minus = index_id.my_id
         value = "minus"
@@ -562,7 +549,6 @@ class InventoryScreen(Screen, Transition):
         self.new_amount_list[index_minus].text = str(int(self.new_amount_list[index_minus].text) - 1)
         self.final_count[index_minus] -= 1
         self.set_label_color(index_minus)
-
 
     """Method that allows us to display and immediately focus a new text input field."""
     def button_to_text(self, index_id):
@@ -593,7 +579,6 @@ class InventoryScreen(Screen, Transition):
         self.set_label_color(self.text_index)
         self.count_values(self.text_index, value)
 
-
     """
     To prevent the user to make changes in the database while still 'unlocked interface', we created an empty list "self.final_count".
     We want all the changes to the database occur only after we exit from the unlocked interface and enter into a locked interface (by clicking the lock_icon).
@@ -609,8 +594,6 @@ class InventoryScreen(Screen, Transition):
 
         elif value == "custom":
             self.final_count[index] += int(self.user_amount)
-
-
 
     """ Method which allows us to unfocus and disable a text input field as soon as it's not focused."""
     def unfocus_text_input(self, index_id, value):
@@ -631,7 +614,6 @@ class InventoryScreen(Screen, Transition):
         else:
             self.new_amount_list[index].color = (1, 1, 1, 0)
 
-
     """
     Method that is fired whenever the user clicks on "lock_icon" button to store the changed data into the database.
     We loop trough the CSV file and merge the pending changes in "self.final_count" list into the default database.
@@ -640,7 +622,6 @@ class InventoryScreen(Screen, Transition):
         for index, amount in enumerate(self.df["Množství"]):
             self.df.at[index, "Množství"] += self.final_count[index]
         self.df.to_csv(csv_file_path, index=False)
-
 
     """ Function that cleans the page of all the widgets, allowing us to return to the page without overlapping widgets."""
     def on_leave(self, *args):
@@ -653,12 +634,10 @@ class InventoryScreen(Screen, Transition):
         self.lock_button.background_down = "Images/unlocked_icon.png"
         self.notebook_button.disabled = False
 
-
 class ImportScreen(Screen, Transition):
     pdf_paths_list = ListProperty([])
     component_file_text = StringProperty("")
     component_path = None
-
 
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)
@@ -708,7 +687,31 @@ class ImportScreen(Screen, Transition):
         self.merge_pdf.bind(on_release=self.merge_pdf_files)
         self.ids.LY6.add_widget(self.merge_pdf)
 
+        self.merge_img = Image(
+            source="Images/merge_success_img.png",
+            pos_hint={"center_x": .85, "center_y": .6},
+            size_hint=(.3, .3),
+            border=(0, 0, 0, 0),
+            opacity=0)
+        self.ids.LY6.add_widget(self.merge_img)
 
+        self.error_pdf_img = Image(
+            source="Images/error_pdf.png",
+            pos_hint={"center_x": .28, "center_y": .8},
+            size_hint=(.3, .3),
+            allow_stretch=True,
+            border=(0, 0, 0, 0),
+            opacity=0)
+        self.ids.LY6.add_widget(self.error_pdf_img)
+
+        self.error_component_img = Image(
+            source="Images/error_component.png",
+            pos_hint={"center_x": .28, "center_y": .49},
+            size_hint=(.3, .3),
+            allow_stretch=True,
+            border=(0, 0, 0, 0),
+            opacity=0)
+        self.ids.LY6.add_widget(self.error_component_img)
 
     """
     Two methods bellow allow us to choose .pdf files that will later be merged together. 
@@ -730,7 +733,7 @@ class ImportScreen(Screen, Transition):
         if self.pdf_path:
             for path in self.pdf_path:
                 self.pdf_paths_list.append(path)
-        print(self.pdf_paths_list)
+
 
         self.anim = Animation(opacity=1, duration=1)
         self.anim.start(self.ids.merge_docs)
@@ -750,7 +753,6 @@ class ImportScreen(Screen, Transition):
             title="Select a file ...",
             filters=[("PDF Files", "*.pdf")],
             on_selection=lambda selection: self.handle_selection(selection, method="component"))
-
 
     """
     After "handle_selection" method is called, it recieves an keyword argument called "method".
@@ -789,60 +791,26 @@ class ImportScreen(Screen, Transition):
             output_pdf_path = os.path.join(desktop_path, f"Kompletní - {self.component_file_text}")
             merger.write(output_pdf_path)
             merger.close()
-
-
-            self.merge_img = Image(
-                source="Images/merge_success_img.png",
-                allow_stretch=True,
-                pos_hint={"center_x": .85, "center_y": .6},
-                size_hint=(.3, .3),
-                opacity=0)
-            self.ids.LY6.add_widget(self.merge_img)
             self.anim.start(self.merge_img)
+            self.anim.bind(on_complete=self.stop_anim)
 
         if self.pdf_paths_list == []:
-            self.error_pdf_img = Image(
-                source="Images/error_pdf.png",
-                allow_stretch=True,
-                pos_hint={"center_x": .28, "center_y": .8},
-                size_hint=(.3, .3),
-                opacity=0)
-            self.ids.LY6.add_widget(self.error_pdf_img)
             self.anim.start(self.error_pdf_img)
             self.anim.bind(on_complete=self.stop_anim)
 
         if self.pdf_component is None or self.pdf_component == []:
-            self.error_component_img = Image(
-                source="Images/error_component.png",
-                allow_stretch=True,
-                pos_hint={"center_x": .28, "center_y": .49},
-                size_hint=(.3, .3),
-                opacity=0)
-            self.ids.LY6.add_widget(self.error_component_img)
             self.anim.start(self.error_component_img)
             self.anim.bind(on_complete=self.stop_anim)
-
-
-        if self.pdf_paths_list == []:
-            if self.pdf_component is None or self.pdf_component == []:
-                self.anim.start(self.error_component_img)
-                self.anim.start(self.error_pdf_img)
-                self.anim.bind(on_complete=self.stop_anim)
-
     def stop_anim(self, dt, instance):
-        # Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_component_img),2)
-        # Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_pdf_img),2)
-        self.anim_fade.start(self.error_component_img)
-        self.anim_fade.start(self.error_pdf_img)
-
+        Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_component_img),1)
+        Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_pdf_img),1)
+        Clock.schedule_once(lambda dt: self.anim_fade.start(self.merge_img), 2)
 
     def on_leave(self, *args):
         self.ids.LY55.clear_widgets()
         self.pdf_paths_list.clear()
         self.component_file_text = ""
         self.component_path = None
-        # self.anim = Animation(opacity=0, duration=0, transition="in_cubic")
-        self.anim_fade.start(self.ids.merge_docs)
 
 class ExportScreen(Screen, Transition):
     """
@@ -854,7 +822,6 @@ class ExportScreen(Screen, Transition):
     data_store = False
     def __init__(self, **kwargs):
         super(ExportScreen, self).__init__(**kwargs)
-
 
         self.df = pd.read_csv(csv_file_path)
         self.transfered_dict = {}
@@ -895,7 +862,6 @@ class ExportScreen(Screen, Transition):
                     size_hint=(1,None),
                     outline_color=(0, 0, 0, 1),
                     outline_width=2)
-
 
                 self.arrow_button = HoverButton(
                     background_normal="Images/arrow_pick.png",
@@ -974,7 +940,6 @@ class ExportScreen(Screen, Transition):
 
         """Each placeholder in "children_list" at the specified index is being replaced with tuple consisting of (component, text, button)."""
         self.children_list[self.component_index] = (self.transfered_component,self.amount_text,self.unselect_button)
-
 
     """
     With "clear_component" method we are removing corresponding widgets. Each removal of a widget updates the GridLayout and decreases
@@ -1059,7 +1024,6 @@ class ExportScreen(Screen, Transition):
         else:
             pass
 
-
     """
     Reseting widget's properties back to their original values including the layout's size_hint and clearing them from the layout.
     """
@@ -1113,7 +1077,6 @@ class FinalExportScreen(Screen, Transition):
         self.pdf_button.bind(on_release=self.create_pdf)
         self.pdf_button.bind(on_release=self.animation)
         self.ids.LY11.add_widget(self.pdf_button)
-
 
         """ For every text input we create a label with corresponding name, both are then added to a new dictionary."""
         self.name_label = Label(text="")
@@ -1353,7 +1316,6 @@ class FinalExportScreen(Screen, Transition):
         subtract the exact amount of components and keep the database up to date.
         """
 
-
         data_file = csv_file_path
         df = pd.read_csv(data_file)
         df2 = pd.DataFrame.from_dict(final_dictionary, orient="index", columns=["Množství"])
@@ -1366,7 +1328,6 @@ class FinalExportScreen(Screen, Transition):
         merge_df = merge_df.rename(columns={'Množství_x': 'Množství'})
         merge_df["Množství"] = merge_df["Množství"].astype(int)
         merge_df.to_csv(csv_file_path, index=False)
-
 
     def animation(self, instance):
         self.export_img = Image(
@@ -1433,10 +1394,8 @@ class SaniStore(App):
         sm.add_widget(ImportScreen(name="Fourth"))
         sm.add_widget(ExportScreen(name="Fifth"))
         sm.add_widget(FinalExportScreen(name="Sixth"))
-        # self.icon = "Images/SaniStore_logo.png"
-        self.icon = os.path.join(main_script_directory, "SaniStore_logo.png")
+        self.icon = os.path.join(images_directory, "SaniStore_logo.png")
         return sm
-
 
 if __name__ == "__main__":
     SaniStore().run()

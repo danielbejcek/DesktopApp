@@ -80,25 +80,17 @@
             source: "Images/importscreen_edit_2.png"
 
     FloatLayout:
-        id: LYimage
-        size_hint: (1,.9)
-        pos_hint: {"center_x": .5, "center_y": .5}
+        id: LY55
 
     FloatLayout:
         id: LY6
-        Label:
-            id: pdf_text
-            text: root.pdf_file_text
-            size_hint: (.2, .2)
-            font_size: 30
-            pos_hint: {"center_x": .29, "center_y": .4}
-
         Image:
             id: merge_docs
             source: "Images/merge_documents.png"
-            size_hint: (.1,.1)
+            size_hint: (.2,.19)
             opacity: 0
-            pos_hint:{"center_x": .29, "center_y": .3}
+            border: (0,0,0,0)
+            pos_hint:{"center_x": .549, "center_y": .3}
 
 
         Label:
@@ -106,7 +98,7 @@
             text: root.component_file_text
             size_hint: (.2, .2)
             font_size: 30
-            pos_hint:{"center_x": .29, "center_y": .2}
+            pos_hint:{"center_x": .78, "center_y": .3}
 
         GridLayout:
             id: LY65

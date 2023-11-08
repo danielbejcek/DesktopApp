@@ -24,13 +24,19 @@ from kivy.core.window import Window
 from kivy.properties import NumericProperty
 from kivy.properties import StringProperty
 from kivy.properties import BooleanProperty
+from kivy.properties import ListProperty
 from kivy.event import EventDispatcher
 from kivy.animation import Animation
 from HoverButton import HoverBehavior
 from kivy.uix.textinput import TextInput
 from plyer import filechooser
 
-
+""" Absolute paths to relevant data/folders."""
+main_script_directory = os.path.abspath(os.path.dirname(__file__))
+csv_file_path = os.path.join(main_script_directory, "Components_data.csv")
+font_file_path = os.path.join(main_script_directory, 'arialuni.ttf')
+images_directory = os.path.join(main_script_directory, "Images")
+pdf_component_directory = os.path.join(main_script_directory, "PDF Component folder")
 
 """
 Class that allows transitions between screens.
@@ -227,7 +233,7 @@ class InventoryScreen(Screen, Transition):
             instance.background_down = "Images/lock_icon.png"
             self.add_widgets(self.ids.LY4)
 
-            self.df = pd.read_csv("Components_data.csv")
+            self.df = pd.read_csv(csv_file_path)
 
             """ 
             'final_count' list is filled with 0 for each component in the dataframe.
@@ -253,7 +259,7 @@ class InventoryScreen(Screen, Transition):
     we will use a "on_leave" function that clears all of the widgets to prevent the widgets from overlapping.
     """
     def on_pre_enter(self, *args):
-        self.df = pd.read_csv("Components_data.csv")
+        self.df = pd.read_csv(csv_file_path)
         self.add_widgets(self.ids.LY4)
 
     """
@@ -633,7 +639,8 @@ class InventoryScreen(Screen, Transition):
     def save_data(self, final_count):
         for index, amount in enumerate(self.df["Množství"]):
             self.df.at[index, "Množství"] += self.final_count[index]
-        self.df.to_csv("Components_data.csv", index=False)
+        self.df.to_csv(csv_file_path, index=False)
+
 
     """ Function that cleans the page of all the widgets, allowing us to return to the page without overlapping widgets."""
     def on_leave(self, *args):
@@ -648,11 +655,15 @@ class InventoryScreen(Screen, Transition):
 
 
 class ImportScreen(Screen, Transition):
-    pdf_file_text = StringProperty("")
+    pdf_paths_list = ListProperty([])
     component_file_text = StringProperty("")
+    component_path = None
+
 
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)
+        self.anim = Animation(opacity=1, duration=.2)
+        self.anim_fade = Animation(opacity=0, duration=1)
 
         self.home_button = HoverButton(
             background_normal="Images/home_button_icon.png",
@@ -672,6 +683,8 @@ class ImportScreen(Screen, Transition):
             pos_hint={"center_x": .55, "center_y": .75})
         self.select_pdf.bind(on_enter=self.select_pdf.on_button_hover, on_leave=self.select_pdf.on_button_hover_exit)
         self.select_pdf.bind(on_release=self.choose_pdf_file)
+        self.select_pdf.bind(on_release=lambda clear_list: self.pdf_paths_list.clear())
+        self.select_pdf.bind(on_release=lambda clear_layout: self.ids.LY55.clear_widgets())
         self.ids.LY6.add_widget(self.select_pdf)
 
         self.select_component = HoverButton(
@@ -689,20 +702,12 @@ class ImportScreen(Screen, Transition):
             background_down="Images/pdf_merge_icon_down.png",
             background_disabled_normal="Images/pdf_merge_icon_disabled.png",
             border=(0, 0, 0, 0),
-            disabled=True,
             size_hint=(.06, .09),
             pos_hint={"center_x": .94, "center_y": .9})
         self.merge_pdf.bind(on_enter=self.merge_pdf.on_button_hover, on_leave=self.merge_pdf.on_button_hover_exit)
         self.merge_pdf.bind(on_release=self.merge_pdf_files)
         self.ids.LY6.add_widget(self.merge_pdf)
 
-        self.merge_img = Image(
-            source="Images/merge_success_img.png",
-            allow_stretch=True,
-            pos_hint={"center_x": .85, "center_y": .6},
-            size_hint=(.3, .3),
-            opacity=0)
-        self.ids.LY6.add_widget(self.merge_img)
 
 
     """
@@ -710,22 +715,42 @@ class ImportScreen(Screen, Transition):
     Once user selects a .pdf file, lambda function is fired to call a "handle_selection" method. 
     Within the lambda function, two arguments are passed: "selection" and "method".
     "Selection" is the selected file, while "method" keyword is the deciding argument.
-    Thanks to the "method" keyword, we are able to differentiate which of the two methods called "handle_selection". 
+    With use of the "method" keyword, we are able to differentiate which of the two methods called "handle_selection".
+    User is able to select multiple .pdf files which are then appended to 'pdf_paths_list', 
+    from which Labels with respective name are created.
     """
     def choose_pdf_file(self, instance):
+
         self.pdf_path = filechooser.open_file(
             title="Select a file ...",
+            multiple=True,
             filters=[("PDF Files", "*.pdf")],
             on_selection=lambda selection: self.handle_selection(selection, method="pdf"))
 
-        self.anim = Animation(opacity=1, duration=1, transition="in_cubic")
+        if self.pdf_path:
+            for path in self.pdf_path:
+                self.pdf_paths_list.append(path)
+        print(self.pdf_paths_list)
+
+        self.anim = Animation(opacity=1, duration=1)
         self.anim.start(self.ids.merge_docs)
+
+        pos_y =  .42
+        for pdf in self.pdf_paths_list:
+            self.pdf_text_label = Label(
+                text=os.path.basename(pdf),
+                pos_hint={"center_x": .29, "center_y": pos_y},
+                size_hint=(.2, .2),
+                font_size=30)
+            self.ids.LY55.add_widget(self.pdf_text_label)
+            pos_y -= .05
 
     def choose_component_file(self, instance):
         self.component_path = filechooser.open_file(
             title="Select a file ...",
             filters=[("PDF Files", "*.pdf")],
             on_selection=lambda selection: self.handle_selection(selection, method="component"))
+
 
     """
     After "handle_selection" method is called, it recieves an keyword argument called "method".
@@ -735,48 +760,89 @@ class ImportScreen(Screen, Transition):
     """
     def handle_selection(self, selection, method):
         if selection:
+            # Selecting only the file name, seperating the rest of the path.
             self.file_name = os.path.basename(selection[0])
 
             if method == "pdf":
-                self.pdf_file_text = self.file_name
+                pass
 
             if method == "component":
                 self.component_file_text = self.file_name
 
-            if self.pdf_file_text != "" and self.component_file_text != "":
-                self.merge_pdf.disabled = False
-
     def merge_pdf_files(self, instance):
-        pdf_path = self.pdf_path
-        component_path = self.component_path
-
         merger = PdfMerger()
-        pdf_files = [pdf_path[0], component_path[0]]
+        if self.component_path is not None:
+            self.pdf_component = self.component_path
+            print(self.pdf_component)
+        else:
+            """ If user closes the file browser window without selecting a file, pdf_component is no longer None, but becomes an empty list instead."""
+            self.pdf_component = None
+            print(self.pdf_component)
 
-        for pdf in pdf_files:
-            merger.append(pdf)
+        if self.pdf_paths_list != [] and self.pdf_component is not None and self.pdf_component != []:
+            for pdf in self.pdf_paths_list:
+                merger.append(pdf)
+            merger.append(self.pdf_component[0])
 
-        user_home = os.path.expanduser("~")
-        desktop_path = os.path.join(user_home, "Desktop")
-        output_pdf_path = os.path.join(desktop_path, f"Kompletní - {self.pdf_file_text}")
-        merger.write(output_pdf_path)
-        merger.close()
-        self.anim = Animation(opacity=1, duration=.2, transition="in_cubic")
-        self.anim.start(self.merge_img)
-        Clock.schedule_once(self.cancel_anim, 3)
+            user_home = os.path.expanduser("~")
+            desktop_path = os.path.join(user_home, "Desktop")
+            output_pdf_path = os.path.join(desktop_path, f"Kompletní - {self.component_file_text}")
+            merger.write(output_pdf_path)
+            merger.close()
 
-    def cancel_anim(self, dt):
-        self.anim = Animation(opacity=0, duration=2, transition="in_back")
-        self.anim.start(self.merge_img)
+
+            self.merge_img = Image(
+                source="Images/merge_success_img.png",
+                allow_stretch=True,
+                pos_hint={"center_x": .85, "center_y": .6},
+                size_hint=(.3, .3),
+                opacity=0)
+            self.ids.LY6.add_widget(self.merge_img)
+            self.anim.start(self.merge_img)
+
+        if self.pdf_paths_list == []:
+            self.error_pdf_img = Image(
+                source="Images/error_pdf.png",
+                allow_stretch=True,
+                pos_hint={"center_x": .28, "center_y": .8},
+                size_hint=(.3, .3),
+                opacity=0)
+            self.ids.LY6.add_widget(self.error_pdf_img)
+            self.anim.start(self.error_pdf_img)
+            self.anim.bind(on_complete=self.stop_anim)
+
+        if self.pdf_component is None or self.pdf_component == []:
+            self.error_component_img = Image(
+                source="Images/error_component.png",
+                allow_stretch=True,
+                pos_hint={"center_x": .28, "center_y": .49},
+                size_hint=(.3, .3),
+                opacity=0)
+            self.ids.LY6.add_widget(self.error_component_img)
+            self.anim.start(self.error_component_img)
+            self.anim.bind(on_complete=self.stop_anim)
+
+
+        if self.pdf_paths_list == []:
+            if self.pdf_component is None or self.pdf_component == []:
+                self.anim.start(self.error_component_img)
+                self.anim.start(self.error_pdf_img)
+                self.anim.bind(on_complete=self.stop_anim)
+
+    def stop_anim(self, dt, instance):
+        # Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_component_img),2)
+        # Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_pdf_img),2)
+        self.anim_fade.start(self.error_component_img)
+        self.anim_fade.start(self.error_pdf_img)
+
 
     def on_leave(self, *args):
-        self.pdf_file_text = ""
+        self.ids.LY55.clear_widgets()
+        self.pdf_paths_list.clear()
         self.component_file_text = ""
-        self.merge_pdf.disabled = True
-        self.pdf_check = False
-        self.component_check = False
-        self.anim = Animation(opacity=0, duration=0, transition="in_cubic")
-        self.anim.start(self.ids.merge_docs)
+        self.component_path = None
+        # self.anim = Animation(opacity=0, duration=0, transition="in_cubic")
+        self.anim_fade.start(self.ids.merge_docs)
 
 class ExportScreen(Screen, Transition):
     """
@@ -789,7 +855,8 @@ class ExportScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(ExportScreen, self).__init__(**kwargs)
 
-        self.df = pd.read_csv("Components_data.csv")
+
+        self.df = pd.read_csv(csv_file_path)
         self.transfered_dict = {}
 
         self.home_button = HoverButton(
@@ -1196,11 +1263,11 @@ class FinalExportScreen(Screen, Transition):
         height = 297
         pdf = FPDF(orientation="P", unit="mm", format="A4")
         pdf.add_page()
-        pdf.add_font("Arial Unicode MS Regular", style="", fname="arialuni.ttf", uni=True)
+        pdf.add_font("Arial Unicode MS Regular", style="", fname=font_file_path, uni=True)
         pdf.rect(10,10,190,277)
         pdf.set_margins(10, 0, 10)
         pdf.set_auto_page_break(False)
-        pdf.image("Images/SaniLogo.png", 179, 279, 20, 7)
+        pdf.image(os.path.join(images_directory, 'SaniLogo.png'), 179, 279, 20, 7)
 
         # Name
         pdf.set_font("Arial Unicode MS Regular", "", 25)
@@ -1276,15 +1343,18 @@ class FinalExportScreen(Screen, Transition):
         else:
             pass
 
-        pdf.output("PDF Component folder/" + f"{self.name_label.text}, {self.date_label.text[7::]}.pdf")
-
+        """ Exporting the PDF file into a subfolder 'PDF Component folder' with the use of absolute path."""
+        pdf_output_path = os.path.join(pdf_component_directory, f"{self.name_label.text}, {self.date_label.text[7::]}.pdf")
+        pdf.output(pdf_output_path)
 
         """
         Using Pandas 'merge' we manage both default database which holds all of the components aswell as the new array,
         which is created from 'final_dictionary'. This dictionary is then merged into the default database (Components_data.csv), which allows us to 
         subtract the exact amount of components and keep the database up to date.
         """
-        data_file = "Components_data.csv"
+
+
+        data_file = csv_file_path
         df = pd.read_csv(data_file)
         df2 = pd.DataFrame.from_dict(final_dictionary, orient="index", columns=["Množství"])
         df2 = df2.reset_index()
@@ -1295,7 +1365,7 @@ class FinalExportScreen(Screen, Transition):
         merge_df = merge_df.drop(columns=["Množství_y"])
         merge_df = merge_df.rename(columns={'Množství_x': 'Množství'})
         merge_df["Množství"] = merge_df["Množství"].astype(int)
-        merge_df.to_csv("Components_data.csv", index=False)
+        merge_df.to_csv(csv_file_path, index=False)
 
 
     def animation(self, instance):
@@ -1363,7 +1433,8 @@ class SaniStore(App):
         sm.add_widget(ImportScreen(name="Fourth"))
         sm.add_widget(ExportScreen(name="Fifth"))
         sm.add_widget(FinalExportScreen(name="Sixth"))
-        self.icon = "Images/SaniStore_logo.png"
+        # self.icon = "Images/SaniStore_logo.png"
+        self.icon = os.path.join(main_script_directory, "SaniStore_logo.png")
         return sm
 
 

@@ -28,6 +28,7 @@ from kivy.properties import ListProperty
 from kivy.event import EventDispatcher
 from kivy.animation import Animation
 from HoverButton import HoverBehavior
+from kivy.uix.behaviors.focus import FocusBehavior
 from kivy.uix.textinput import TextInput
 from plyer import filechooser
 
@@ -123,7 +124,7 @@ class WelcomeScreen(Screen, Transition):
         fade_in_image = Animation(opacity=1, duration=1.5)
         fade_in_image.start(self.logo_image)
         # In order for this function to perform as inteded, lambda needs to be used here.
-        Clock.schedule_once(lambda dt: self.transition("Second"), 4)
+        Clock.schedule_once(lambda dt: self.transition("Second"), 1)
 
 class MainScreen(Screen, Transition):
     def __init__(self, **kwargs):
@@ -641,7 +642,7 @@ class ImportScreen(Screen, Transition):
 
     def __init__(self,**kwargs):
         super(ImportScreen, self).__init__(**kwargs)
-        self.anim = Animation(opacity=1, duration=.2)
+        self.anim = Animation(opacity=1, duration=.1)
         self.anim_fade = Animation(opacity=0, duration=1)
 
         self.home_button = HoverButton(
@@ -804,7 +805,7 @@ class ImportScreen(Screen, Transition):
     def stop_anim(self, dt, instance):
         Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_component_img),1)
         Clock.schedule_once(lambda dt: self.anim_fade.start(self.error_pdf_img),1)
-        Clock.schedule_once(lambda dt: self.anim_fade.start(self.merge_img), 2)
+        Clock.schedule_once(lambda dt: self.anim_fade.start(self.merge_img), 3)
 
     def on_leave(self, *args):
         self.ids.LY55.clear_widgets()
@@ -1092,6 +1093,7 @@ class FinalExportScreen(Screen, Transition):
             pos_hint={"center_x": .55, "center_y": .736},
             on_text_validate=self.create_label)
         self.ids.LY11.add_widget(self.name_textinput)
+        self.name_textinput.bind(on_text_validate=self.next_on_validate)
         self.textinput_dictionary.update({self.name_textinput:self.name_label})
 
         self.system_label = Label(text="")
@@ -1107,6 +1109,7 @@ class FinalExportScreen(Screen, Transition):
             pos_hint={"center_x": .55, "center_y": .614},
             on_text_validate=self.create_label)
         self.ids.LY11.add_widget(self.system_textinput)
+        self.system_textinput.bind(on_text_validate=self.next_on_validate)
         self.textinput_dictionary.update({self.system_textinput:self.system_label})
 
         self.material_label = Label(text="")
@@ -1122,6 +1125,7 @@ class FinalExportScreen(Screen, Transition):
             pos_hint={"center_x": .55, "center_y": .491},
             on_text_validate=self.create_label)
         self.ids.LY11.add_widget(self.material_textinput)
+        self.material_textinput.bind(on_text_validate=self.next_on_validate)
         self.textinput_dictionary.update({self.material_textinput:self.material_label})
 
         self.contract_label = Label(text="")
@@ -1137,6 +1141,7 @@ class FinalExportScreen(Screen, Transition):
             pos_hint={"center_x": .55, "center_y": .3695},
             on_text_validate=self.create_label)
         self.ids.LY11.add_widget(self.contract_textinput)
+        self.contract_textinput.bind(on_text_validate=self.next_on_validate)
         self.textinput_dictionary.update({self.contract_textinput:self.contract_label})
 
         self.height_label = Label(text="")
@@ -1152,6 +1157,7 @@ class FinalExportScreen(Screen, Transition):
             pos_hint={"center_x": .55, "center_y": .245},
             on_text_validate=self.create_label)
         self.ids.LY11.add_widget(self.height_textinput)
+        self.height_textinput.bind(on_text_validate=self.next_on_validate)
         self.textinput_dictionary.update({self.height_textinput:self.height_label})
 
         self.date_label = Label(text="")
@@ -1176,14 +1182,21 @@ class FinalExportScreen(Screen, Transition):
         self.ids.LY13.add_widget(self.height_label)
         self.ids.LY13.add_widget(self.date_label)
 
+    """ Method that allows the 'Enter' button to move and focus the next TextInput. """
+    def next_on_validate(self, instance):
+        next = instance._get_focus_next("focus_next")
+        if next:
+            instance.focus = False
+            next.focus = True
+
     """
     Method that updates the labels within the "self.textinput_dictionary. After user validates the text input with enter,
-    corresponding label is update with the user's text.
+    corresponding label is updated with the user's text.
     """
     def create_label(self, instance):
         label = self.textinput_dictionary[instance]
         label.color = (0, 0, 0, 1)
-        label.text = instance.text
+        label.text = instance.text.replace('/','.')
 
         if instance == self.name_textinput:
             label.font_size = 35
@@ -1213,10 +1226,10 @@ class FinalExportScreen(Screen, Transition):
             label.size = label.texture_size
 
         if instance == self.date_textinput:
-            label.text = f"DATUM: {instance.text}"
+            label.text = f"DATUM: {instance.text.replace('/','.')}"
             label.font_size = 15
             label.pos_hint = {"center_x": .133, "center_y": .02}
-            label.text_size = (150, None)
+            label.text_size = (200, None)
             label.size = label.texture_size
 
     def create_pdf(self, instance):
@@ -1248,8 +1261,8 @@ class FinalExportScreen(Screen, Transition):
 
         # Contract
         pdf.set_font("Arial Unicode MS Regular", "", 20)
-        pdf.set_xy(160, 40)
-        pdf.multi_cell(30, 10, self.contract_label.text,1, "L")
+        pdf.set_xy(150, 40)
+        pdf.multi_cell(50, 10, self.contract_label.text,1, "L")
 
         # Height
         pdf.set_font("Arial Unicode MS Regular", "", 10)
@@ -1306,8 +1319,13 @@ class FinalExportScreen(Screen, Transition):
         else:
             pass
 
-        """ Exporting the PDF file into a subfolder 'PDF Component folder' with the use of absolute path."""
-        pdf_output_path = os.path.join(pdf_component_directory, f"{self.name_label.text}, {self.date_label.text[7::]}.pdf")
+        """ 
+        Exporting the PDF file into a subfolder 'PDF Component folder' with the use of an absolute path. 
+        '.replace('/','.')' needs to be introduced to prevent an error which causes the program to crash.
+        When user decides to set the date for example: '28/02/2022', FPDF understands the '/' as a path separator,
+        which leads to non-existent directory. '.replace('/','.')' takes the slash symbol and replaces it with a period.
+        """
+        pdf_output_path = os.path.join(pdf_component_directory,f"{self.name_label.text.replace('/','.')}, {self.date_label.text[7::].replace('/','.')}.pdf")
         pdf.output(pdf_output_path)
 
         """
@@ -1315,7 +1333,6 @@ class FinalExportScreen(Screen, Transition):
         which is created from 'final_dictionary'. This dictionary is then merged into the default database (Components_data.csv), which allows us to 
         subtract the exact amount of components and keep the database up to date.
         """
-
         data_file = csv_file_path
         df = pd.read_csv(data_file)
         df2 = pd.DataFrame.from_dict(final_dictionary, orient="index", columns=["Množství"])

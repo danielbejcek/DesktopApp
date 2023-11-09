@@ -124,7 +124,7 @@ class WelcomeScreen(Screen, Transition):
         fade_in_image = Animation(opacity=1, duration=1.5)
         fade_in_image.start(self.logo_image)
         # In order for this function to perform as inteded, lambda needs to be used here.
-        Clock.schedule_once(lambda dt: self.transition("Second"), 1)
+        Clock.schedule_once(lambda dt: self.transition("Second"), 4)
 
 class MainScreen(Screen, Transition):
     def __init__(self, **kwargs):

@@ -2,6 +2,7 @@ import kivy
 import pandas as pd
 import tabula
 import os
+import io
 import functools
 from fpdf import FPDF
 from PyPDF2 import PdfMerger
@@ -255,7 +256,11 @@ class InventoryScreen(Screen, Transition):
     we will use a "on_leave" function that clears all of the widgets to prevent the widgets from overlapping.
     """
     def on_pre_enter(self, *args):
-        self.df = pd.read_csv(csv_file_path)
+        
+        with open(csv_file_path, 'rb') as f:
+            contents = f.read()
+        self.df = pd.read_csv(io.BytesIO(contents), encoding='utf-8')
+      
         self.add_widgets(self.ids.LY4)
 
     """
@@ -824,7 +829,9 @@ class ExportScreen(Screen, Transition):
     def __init__(self, **kwargs):
         super(ExportScreen, self).__init__(**kwargs)
 
-        self.df = pd.read_csv(csv_file_path)
+        with open(csv_file_path, 'rb') as f:
+            contents = f.read()
+        self.df = pd.read_csv(io.BytesIO(contents), encoding='utf-8')
         self.transfered_dict = {}
 
         self.home_button = HoverButton(
@@ -1333,8 +1340,9 @@ class FinalExportScreen(Screen, Transition):
         which is created from 'final_dictionary'. This dictionary is then merged into the default database (Components_data.csv), which allows us to 
         subtract the exact amount of components and keep the database up to date.
         """
-        data_file = csv_file_path
-        df = pd.read_csv(data_file)
+        with open(csv_file_path, 'rb') as f:
+            contents = f.read()
+        df = pd.read_csv(io.BytesIO(contents), encoding='utf-8')
         df2 = pd.DataFrame.from_dict(final_dictionary, orient="index", columns=["Množství"])
         df2 = df2.reset_index()
         df2 = df2.rename(columns={"index": "Komponent"})

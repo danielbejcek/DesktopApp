@@ -1,7 +1,7 @@
 # Welcome to SaniStore
 A Desktop Kivy App.
 
-SaniStore serves as a standalone virtual warehouse individualy tailored for specific needs of a small business company called SaniArt.
+SaniStore serves as a standalone virtual warehouse individually tailored for specific needs of a small business company called SaniArt.
 SaniArt revolves around the manufacture and assembly of sanitary wall systems and toilet cubicles.
 
 SaniStore offers multiple screen options for the user to work with.
